@@ -2,7 +2,7 @@
 
 Android app to patch Spotify combining the powers of AntiSplit-M and ReVanced Manager !
 
-[Main screen](images/mainscreen.png)
+![Main screen](images/mainscreen.png)
 
 ## Usage
 
