@@ -39,6 +39,7 @@ import com.reandroid.apkeditor.merge.LogUtil
 import com.reandroid.apkeditor.merge.Merger
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import com.reandroid.apkeditor.merge.Merger.signedApk
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -167,20 +168,23 @@ class MainActivity : AppCompatActivity(), LogListener {
 					.append((findViewById<View>(R.id.errorField) as TextView).text)
 			)
 		}
-		lifecycleScope.launch(Dispatchers.Default) {
+		val coroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
+			this@MainActivity.showError(e)
+		}
+		lifecycleScope.launch(Dispatchers.Default + coroutineExceptionHandler) {
 			try {
 				val cacheDir = this@MainActivity.cacheDir
 				deleteDir(cacheDir)
-					val bundle = ApkBundle()
-					bundle.loadApkDirectory(
-						File(
-							this@MainActivity.packageManager.getPackageInfo(
-								pkgName!!, 0
-							).applicationInfo!!.sourceDir
-						).parentFile, false, this@MainActivity
-					)
-					Merger.run(bundle, cacheDir, outputUri, this@MainActivity, false)
-					this@MainActivity.showSuccess()
+				val bundle = ApkBundle()
+				bundle.loadApkDirectory(
+					File(
+						this@MainActivity.packageManager.getPackageInfo(
+							pkgName!!, 0
+						).applicationInfo!!.sourceDir
+					).parentFile, false, this@MainActivity
+				)
+				Merger.run(bundle, cacheDir, outputUri, this@MainActivity, false)
+				this@MainActivity.showSuccess()
 			} catch (exception: Exception) {
 				this@MainActivity.showError(exception)
 			}
@@ -242,7 +246,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
-	private fun showSuccess() {
+	private suspend fun showSuccess() {
 		onLog("Merging APK succeeded !")
 
 		val installButton = findViewById<View>(R.id.installButton)
@@ -251,39 +255,37 @@ class MainActivity : AppCompatActivity(), LogListener {
 			val success = this.getString(R.string.success_saved)
 			LogUtil.logMessage(success)
 			if (signedApk != null) {
-				lifecycleScope.launch(Dispatchers.Default) {
-					val patchedApk = patch(
-						applicationContext, signedApk,
-						this@MainActivity
-					)
-					runOnUiThread {
-						installButton.setOnClickListener {
-							startActivity(
-								Intent(Intent.ACTION_INSTALL_PACKAGE)
-									.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-									.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-									.setData(
-										FileProvider.getUriForFile(
-											applicationContext,
-											"com.github.corentinc.SpotifyAutoPatcher.provider",
-											patchedApk
-										)
+				val patchedApk = patch(
+					applicationContext, signedApk,
+					this@MainActivity
+				)
+				runOnUiThread {
+					installButton.setOnClickListener {
+						startActivity(
+							Intent(Intent.ACTION_INSTALL_PACKAGE)
+								.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+								.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+								.setData(
+									FileProvider.getUriForFile(
+										applicationContext,
+										"com.github.corentinc.SpotifyAutoPatcher.provider",
+										patchedApk
 									)
-							)
-						}
-						installButton.visibility = View.VISIBLE
-						onLog("Ready to install APK ! Uninstall existing package first before clicking on install")
-						findViewById<View>(R.id.cancelButton).visibility =
-							View.GONE
-						showAlertDialog(
-							getString(R.string.ready_to_install),
-							positiveButtonText = "Ok",
-							positiveButtonAction = {
-								// empty
-							},
+								)
 						)
-
 					}
+					installButton.visibility = View.VISIBLE
+					onLog("Ready to install APK ! Uninstall existing package first before clicking on install")
+					findViewById<View>(R.id.cancelButton).visibility =
+						View.GONE
+					showAlertDialog(
+						getString(R.string.ready_to_install),
+						positiveButtonText = "Ok",
+						positiveButtonAction = {
+							// empty
+						},
+					)
+
 				}
 			} else installButton.visibility = View.GONE
 		}
@@ -302,7 +304,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		).show()
 	}
 
-	private fun showError(e: Exception) {
+	private fun showError(e: Throwable) {
 		if (e !is ClosedByInterruptException) {
 			val mainErr = e.toString()
 			errorOccurred = mainErr != this.getString(R.string.sign_failed)

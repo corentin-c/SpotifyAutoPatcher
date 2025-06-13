@@ -7,16 +7,20 @@ import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
 import app.revanced.patcher.patch.loadPatchesFromDex
-import com.github.corentinc.SpotifyAutoPatcher.R
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.reandroid.apkeditor.merge.Merger.LogListener
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.net.URL
 
 object ReVancedPatcher {
 	suspend fun patch(context: Context, apk: Uri, logListener: LogListener): File {
 		logListener.onLog("Getting patches...")
-		val patchesFile = File(context.cacheDir, "patches.rvp")
-		patchesFile.copyRawResourceToFile(context, R.raw.patches)
+		val patchesFile = getPatches(context)
 		val patches =
 			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = context.codeCacheDir)
 		logListener.onLog("Filtering patches...")
@@ -87,6 +91,41 @@ object ReVancedPatcher {
 				inputStream?.copyTo(outputStream) ?: throw Exception("Couldn't copy apk")
 			}
 		}
+	}
+
+	private fun File.fromInputStream(inputStream: InputStream) {
+		inputStream.use { stream ->
+			FileOutputStream(this).use { outputStream ->
+				stream.copyTo(outputStream)
+			}
+		}
+	}
+
+	private fun readInputStream(inputStream: InputStream): String {
+		val bufferedReader = BufferedReader(InputStreamReader(inputStream))
+		var totalString = ""
+		var line: String?
+		while (bufferedReader.readLine().also { line = it } != null) {
+			totalString += "$line\n"
+		}
+		return totalString
+	}
+
+	private fun getPatches(context: Context): File {
+		val patchesInfoURL = URL("https://api.revanced.app/v4/patches")
+		val urlConnection = patchesInfoURL.openConnection()
+		urlConnection.connectTimeout = 4000
+		val string = readInputStream(urlConnection.getInputStream())
+		val itemType = object : TypeToken<ReVancedPatchesInfo>() {
+			// empty
+		}.type
+		val patchesInfo = Gson().fromJson<ReVancedPatchesInfo>(string, itemType)
+		val patchesUrl = URL(patchesInfo.download_url)
+		val patchesUrlConnection = patchesUrl.openConnection()
+		patchesUrlConnection.connectTimeout = 4000
+		val patchesFile = File(context.cacheDir, "patches.rvp")
+		patchesFile.fromInputStream(patchesUrlConnection.getInputStream())
+		return patchesFile
 	}
 
 }

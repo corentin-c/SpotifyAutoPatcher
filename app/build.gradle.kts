@@ -53,4 +53,5 @@ dependencies {
     implementation("app.revanced:patches:5.27.0-dev.2")
     implementation("app.revanced:revanced-library-android:3.2.0-dev.1")
     implementation("com.github.topjohnwu.libsu:nio:5.2.2")
+    implementation("com.google.code.gson:gson:2.13.1")
 }
