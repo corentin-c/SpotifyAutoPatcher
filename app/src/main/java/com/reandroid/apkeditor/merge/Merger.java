@@ -20,14 +20,11 @@ import static com.reandroid.apkeditor.merge.LogUtil.logMessage;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.v4.content.FileProvider;
-import android.text.TextUtils;
 
 import com.abdurazaaqmohammed.AntiSplit.R;
 import com.abdurazaaqmohammed.AntiSplit.main.DeviceSpecsUtil;
 import com.abdurazaaqmohammed.AntiSplit.main.MainActivity;
 import com.abdurazaaqmohammed.AntiSplit.main.MismatchedSplitsException;
-import com.abdurazaaqmohammed.AntiSplit.main.SignUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.j256.simplezip.ZipFileInput;
 import com.j256.simplezip.format.ZipFileHeader;
@@ -246,24 +243,7 @@ public class Merger {
             logMessage(context.getString(R.string.saving));
 
             File temp;
-            if (sign[0]) {
-                mergedModule.writeApk(temp = new File(cacheDir, "temp.apk"));
-                logMessage(context.getString(R.string.signing));
-                boolean saveToCache = MainActivity.doesNotHaveStoragePerm(context);
-                String p;
-                File signed = new File(saveToCache || (saveToCache = TextUtils.isEmpty(p = FileUtils.getPath(out, context))) ? (cacheDir + File.separator + "signed.apk") : p);
-                try {
-                    SignUtil.signDebugKey(context, temp, signed);
-                    if (saveToCache)
-                        try (OutputStream os = context.getContentResolver().openOutputStream(signedApk = out)) {
-                            FileUtils.copyFile(signed, os);
-                        }
-                    else
-                        signedApk = FileProvider.getUriForFile(context, "com.abdurazaaqmohammed.AntiSplit.provider", signed);
-                } catch (Exception e) {
-                    SignUtil.signPseudoApkSigner(temp, context, out, e);
-                }
-            } else if (saveToCacheDir[0]) {
+            if (saveToCacheDir[0]) {
                 File poopyip = new File(cacheDir, "poopyip.apk");
                 mergedModule.writeApk(poopyip);
                 FileUtils.copyFile(poopyip, FileUtils.getOutputStream(out, context));
