@@ -9,7 +9,6 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -32,7 +31,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.text.Editable;
-import android.text.Html;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
@@ -43,7 +41,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -65,6 +62,7 @@ import androidx.core.widget.NestedScrollView;
 
 import com.abdurazaaqmohammed.AntiSplit.R;
 import com.fom.storage.media.AndroidXI;
+import com.github.paul035.LocaleHelper;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.color.DynamicColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -77,14 +75,10 @@ import com.reandroid.apkeditor.merge.LogUtil;
 import com.reandroid.apkeditor.merge.Merger;
 import com.starry.FileUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,8 +86,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import com.github.paul035.LocaleHelper;
 
 /** @noinspection deprecation*/
 public class MainActivity extends AppCompatActivity implements Merger.LogListener {
@@ -105,7 +97,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
     private ArrayList<Uri> uris;
     private boolean urisAreSplitApks = true;
     public static boolean errorOccurred;
-    public static boolean checkForUpdates;
     public static String lang;
     public static int theme;
     public static int sortMode;
@@ -155,7 +146,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
             getWindow().setNavigationBarContrastEnforced(true);
         }
         // Fetch settings from SharedPreferences
-        if(checkForUpdates = settings.getBoolean("checkForUpdates", true)) new CheckForUpdatesTask(this, false).execute();
         signApk = settings.getBoolean("signApk", true);
         showDialog = settings.getBoolean("showDialog", false);
         selectSplitsForDevice = settings.getBoolean("selectSplitsForDevice", false);
@@ -265,9 +255,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
             ((TextView) settingsDialog.findViewById(R.id.ask)).setText(rss.getString(R.string.ask));
             ((TextView) settingsDialog.findViewById(R.id.showDialogToggle)).setText(rss.getString(R.string.show_dialog));
             ((TextView) settingsDialog.findViewById(R.id.signToggle)).setText(rss.getString(R.string.sign_apk));
-            ((TextView) settingsDialog.findViewById(R.id.selectSplitsForDeviceToggle)).setText(rss.getString(R.string.automatically_select));
-            ((TextView) settingsDialog.findViewById(R.id.updateToggle)).setText(rss.getString(R.string.auto_update));
-            ((TextView) settingsDialog.findViewById(R.id.checkUpdateNow)).setText(rss.getString(R.string.check_update_now));
             ((TextInputLayout) settingsDialog.findViewById(R.id.suffixLayout)).setHint(rss.getString(R.string.suffix));
             TextInputEditText suffixInput = settingsDialog.findViewById(R.id.suffixInput);
             suffixInput.setText(suffix);
@@ -318,13 +305,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
                     recreate();
                 }
             });
-
-            Button checkUpdateNow = settingsDialog.findViewById(R.id.checkUpdateNow);
-            CompoundButton updateSwitch = settingsDialog.findViewById(R.id.updateToggle);
-            updateSwitch.setChecked(checkForUpdates);
-            updateSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> checkUpdateNow.setVisibility((checkForUpdates = isChecked) ? View.GONE : View.VISIBLE));
-            checkUpdateNow.setVisibility(checkForUpdates ? View.GONE : View.VISIBLE);
-            checkUpdateNow.setOnClickListener(v1 -> new CheckForUpdatesTask(this, true).execute());
 
             CompoundButton logSwitch = settingsDialog.findViewById(R.id.logToggle);
             logSwitch.setChecked(logEnabled);
@@ -462,8 +442,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
             ((TextView) settingsDialog.findViewById(R.id.showDialogToggle)).setText(res.getString(R.string.show_dialog));
             ((TextView) settingsDialog.findViewById(R.id.signToggle)).setText(res.getString(R.string.sign_apk));
             ((TextView) settingsDialog.findViewById(R.id.selectSplitsForDeviceToggle)).setText(res.getString(R.string.automatically_select));
-            ((TextView) settingsDialog.findViewById(R.id.updateToggle)).setText(res.getString(R.string.auto_update));
-            ((TextView) settingsDialog.findViewById(R.id.checkUpdateNow)).setText(res.getString(R.string.check_update_now));
             ((TextInputLayout) settingsDialog.findViewById(R.id.suffixLayout)).setHint(rss.getString(R.string.suffix));
         }
     }
@@ -499,7 +477,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
                 .putBoolean("selectSplitsForDevice", selectSplitsForDevice)
                 .putInt("theme", theme)
                 .putInt("sortMode", sortMode)
-                .putBoolean("checkForUpdates", checkForUpdates)
                 .putString("lang", lang)
                 .putString("suffix", suffix)
                 .apply();
@@ -768,110 +745,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
         View copyButton = findViewById(R.id.copyButton);
         copyButton.setVisibility(View.VISIBLE);
         copyButton.setOnClickListener(v -> copyText(new StringBuilder().append(logField.getText()).append('\n').append(((TextView) findViewById(R.id.errorField)).getText())));
-    }
-
-    private static class CheckForUpdatesTask extends AsyncTask<Void, Void, String[]> {
-        private final WeakReference<MainActivity> context;
-        private final boolean toast;
-
-        CheckForUpdatesTask(MainActivity context, boolean toast) {
-            this.context = new WeakReference<>(context);
-            this.toast = toast;
-        }
-
-        @Override
-        protected String[] doInBackground(Void... voids) {
-            try {
-                HttpURLConnection conn = (HttpURLConnection) new URL("https://api.github.com/repos/AbdurazaaqMohammed/AntiSplit-M/releases").openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0");
-                conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-
-                try (InputStream inputStream = conn.getInputStream();
-                     InputStreamReader in = new InputStreamReader(inputStream);
-                     BufferedReader reader = new BufferedReader(in)) {
-                    String line;
-                    String ver = "";
-                    String changelog = "";
-                    String dl = "";
-                    boolean rightBranch = false;
-                    while ((line = reader.readLine()) != null) {
-                        if(line.contains("browser_download_url")) {
-                            dl = line.split("\"")[3];
-                            ver = line.split("/")[7];
-                            rightBranch = ver.charAt(0) == '2';
-                        } else if(line.contains("body") && rightBranch) {
-                            changelog = line.split("\"")[3];
-                            break;
-                        }
-                    }
-
-                    return new String[]{ver, changelog, dl};
-                }
-            } catch (Exception e) {
-                return null;
-            }
-        }
-
-
-        @SuppressLint("UnspecifiedRegisterReceiverFlag")
-        @Override
-        protected void onPostExecute(String[] result) {
-            MainActivity activity = context.get();
-            if(result == null) {
-                if (toast) activity.runOnUiThread(() -> Toast.makeText(activity, "Failed to check for update", Toast.LENGTH_SHORT).show());
-            } else try {
-                String latestVersion = result[0];
-                String currentVer;
-                try {
-                    currentVer = ((Context) activity).getPackageManager().getPackageInfo(((Context) activity).getPackageName(), 0).versionName;
-                } catch (Exception e) {
-                    currentVer = null;
-                }
-                boolean newVer = false;
-                char[] curr = TextUtils.isEmpty(currentVer) ? new char[] {'2', '1', '1'} : currentVer.replace(".", "").toCharArray();
-                char[] latest = latestVersion.replace(".", "").toCharArray();
-
-                int maxLength = Math.max(curr.length, latest.length);
-                for (int i = 0; i < maxLength; i++) {
-                    char currChar = i < curr.length ? curr[i] : '0';
-                    char latestChar = i < latest.length ? latest[i] : '0';
-
-                    if (latestChar > currChar) {
-                        newVer = true;
-                        break;
-                    } else if (latestChar < currChar) {
-                        break;
-                    }
-                }
-
-                if(newVer) {
-                    String ending = ".apk";
-                    String filename = "AntiSplit-M.v" + latestVersion + ending;
-                    String link = result[2].endsWith(ending) ? result[2] : result[2] + File.separator + filename;
-                    MaterialTextView changelogText = new MaterialTextView(activity);
-                    String linebreak = "<br />";
-                    changelogText.setText(Html.fromHtml(rss.getString(R.string.new_ver) + " (" + latestVersion  + ")" + linebreak + linebreak + "Changelog:" + linebreak + result[1].replace("\\r\\n", linebreak)));
-                    int padding = 16;
-                    changelogText.setPadding(padding, padding, padding, padding);
-                    MaterialTextView title = new MaterialTextView(activity);
-                    title.setText(rss.getString(R.string.update));
-                    int size = 20;
-                    title.setPadding(size,size,size,size);
-                    title.setTextSize(size);
-                    title.setGravity(Gravity.CENTER);
-                    activity.runOnUiThread(new MaterialAlertDialogBuilder(activity).setCustomTitle(title).setView(changelogText).setPositiveButton(rss.getString(R.string.dl), (dialog, which) -> {
-                                    if (Build.VERSION.SDK_INT < 29) activity.checkStoragePerm();
-                                    ((DownloadManager) activity.getSystemService(DOWNLOAD_SERVICE)).enqueue(new DownloadManager.Request(Uri.parse(link))
-                                    .setTitle(filename).setDescription(filename).setMimeType("application/vnd.android.package-archive")
-                                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE | DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED));
-                                }).setNegativeButton("Go to GitHub Release", (dialog, which) -> activity.startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://github.com/AbdurazaaqMohammed/AntiSplit-M/releases/latest")))).setNeutralButton(rss.getString(R.string.cancel), null).create()::show);
-                } else if (toast) activity.runOnUiThread(() -> Toast.makeText(activity, rss.getString(R.string.no_update_found), Toast.LENGTH_SHORT).show());
-            } catch (Exception ignored) {
-                if (toast) activity.runOnUiThread(() -> Toast.makeText(activity, "Failed to check for update", Toast.LENGTH_SHORT).show());
-            }
-        }
     }
 
     public void showApkSelectionDialog() {

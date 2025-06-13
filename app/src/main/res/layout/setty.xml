@@ -143,24 +143,10 @@
             android:layout_height="1dp"
             android:background="?android:attr/listDivider" />
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/updateToggle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:text="@string/auto_update" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="?android:attr/listDivider" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/checkUpdateNow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/check_update_now"
-            style="@style/Widget.Material3.Button.OutlinedButton" />
 
         <View
             android:layout_width="match_parent"
