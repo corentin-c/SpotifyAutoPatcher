@@ -9,21 +9,25 @@ import app.revanced.patcher.PatcherConfig
 import app.revanced.patcher.patch.loadPatchesFromDex
 import com.abdurazaaqmohammed.AntiSplit.R
 import com.reandroid.apkeditor.merge.Merger.LogListener
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileOutputStream
 
-object CPatcher {
-	fun patch(context: Context, apk: Uri, logListener: LogListener): File {
+object ReVancedPatcher {
+	suspend fun patch(context: Context, apk: Uri, logListener: LogListener): File {
+		logListener.onLog("Getting patches...")
 		val patchesFile = File(context.cacheDir, "patches.rvp")
 		patchesFile.copyRawResourceToFile(context, R.raw.patches)
 		val patches =
 			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = context.codeCacheDir)
+		logListener.onLog("Filtering patches...")
 		val spotifyPatches = patches.filter { patch ->
 			patch.compatiblePackages?.any { it.first == "com.spotify.music" } ?: false
 		}
 		val unpatchedApkFile = File(context.cacheDir, "spotify.apk")
 		unpatchedApkFile.copyUriToFile(context, apk)
+		logListener.onLog("${spotifyPatches.size} patches to apply")
+		var numberOfPatchesExecuted = 0
+		logListener.onLog("Applying patches...")
 		val patcherResult =
 			Patcher(
 				PatcherConfig(
@@ -34,21 +38,26 @@ object CPatcher {
 				)
 			).use { patcher ->
 				patcher += spotifyPatches.toSet()
-				runBlocking {
-					patcher().collect { patchResult ->
-						if (patchResult.exception != null)
-							logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception}")
-						else
-							logListener.onLog("\"${patchResult.patch}\" succeeded")
+				patcher().collect { patchResult ->
+					numberOfPatchesExecuted++
+					if (patchResult.exception != null)
+						logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception} ($numberOfPatchesExecuted/${spotifyPatches.size})")
+					else
+						logListener.onLog("\"${patchResult.patch}\" succeeded ($numberOfPatchesExecuted/${spotifyPatches.size})")
+					if (numberOfPatchesExecuted == spotifyPatches.size) {
+						logListener.onLog("Rebuilding...")
 					}
 				}
 
 				// Compile and save the patched APK file components.
 				patcher.get()
 			}
-		logListener.onLog("FINISHED PATCHING !!")
+		logListener.onLog("Patching succeeded !")
+		logListener.onLog("Creating APK...")
 		patcherResult.applyTo(unpatchedApkFile)
+		logListener.onLog("APK creation succeeded !")
 		val signedPatchedApk = File(context.filesDir, "signedPatched.apk")
+		logListener.onLog("Signing APK...")
 		ApkUtils.signApk(
 			unpatchedApkFile,
 			signedPatchedApk,
@@ -60,9 +69,7 @@ object CPatcher {
 				"autoSpotify.key.password"
 			)
 		)
-
-
-		logListener.onLog("FINISHED SIGNING !!")
+		logListener.onLog("APK signing succeeded !")
 		return signedPatchedApk
 	}
 

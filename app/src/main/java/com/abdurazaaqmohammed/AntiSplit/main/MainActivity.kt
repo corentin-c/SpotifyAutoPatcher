@@ -33,17 +33,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
+import androidx.lifecycle.lifecycleScope
 import com.abdurazaaqmohammed.AntiSplit.R
-import com.corentinc.patcher.CPatcher.patch
-import com.fom.storage.media.AndroidXI
+import com.corentinc.patcher.ReVancedPatcher.patch
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.reandroid.apk.ApkBundle
 import com.reandroid.apkeditor.merge.LogUtil
 import com.reandroid.apkeditor.merge.Merger
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import com.reandroid.apkeditor.merge.Merger.signedApk
-import com.starry.FileUtils
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.ref.WeakReference
@@ -109,8 +108,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
-	var logField: TextView? = null
-	var scrollView: NestedScrollView? = null
+	private var logField: TextView? = null
+	private var scrollView: NestedScrollView? = null
 
 	override fun onLog(msg: CharSequence) {
 		onLog(msg.toString())
@@ -182,6 +181,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private fun process(outputUri: Uri) {
+		onLog("Merging APK...")
 		findViewById<View>(R.id.installButton).visibility =
 			View.GONE
 		val processTask = ProcessTask(this, pkgName)
@@ -191,19 +191,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		val cancelButton = findViewById<View>(R.id.cancelButton)
 		cancelButton.visibility = View.VISIBLE
 		cancelButton.setOnClickListener { v: View? ->
-			try {
-				if (doesNotHaveStoragePerm(this)) AndroidXI.getInstance()
-					.with(this).delete(launcher, outputUri)
-				else if (File(FileUtils.getPath(outputUri, this))
-						.delete()
-				) LogUtil.logMessage(
-					"Cleaned output file " + getOriginalFileName(
-						this,
-						outputUri
-					)
-				)
-			} catch (ignored: Exception) {
-			}
 			var intent = packageManager.getLaunchIntentForPackage(packageName)
 			if (intent == null) {
 				processTask.cancel(true)
@@ -229,6 +216,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private fun showSuccess() {
+		onLog("Merging APK succeeded !")
 		findViewById<View>(R.id.cancelButton).visibility =
 			View.GONE
 
@@ -239,7 +227,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 			LogUtil.logMessage(success)
 			runOnUiThread { Toast.makeText(this, success, Toast.LENGTH_SHORT).show() }
 			if (signedApk != null) {
-				GlobalScope.launch {
+				lifecycleScope.launch(Dispatchers.Default) {
 					val patchedApk = patch(
 						applicationContext, signedApk,
 						this@MainActivity
@@ -260,6 +248,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 							)
 						}
 						installButton.visibility = View.VISIBLE
+						onLog("Ready to install APK !")
 					}
 				}
 			} else installButton.visibility = View.GONE
