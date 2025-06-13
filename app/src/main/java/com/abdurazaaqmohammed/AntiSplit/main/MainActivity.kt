@@ -8,7 +8,8 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.NameNotFoundException
-import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
@@ -21,6 +22,8 @@ import android.support.v4.content.FileProvider
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
+import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -81,7 +84,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 		val w = ad.window
 		if (w != null) {
 			val border = GradientDrawable()
-			border.setColor(if (Companion.theme == com.google.android.material.R.style.Theme_Material3_Light_NoActionBar) Color.WHITE else Color.BLACK) // Background color
+			val background: Drawable = findViewById<FrameLayout>(R.id.main).background
+			border.setColor((background as ColorDrawable).color) // Background color
 			val typedValue = TypedValue()
 			theme.resolveAttribute(android.R.attr.colorPrimary, typedValue, true)
 			border.setStroke(5, typedValue.data) // Border width and color
@@ -94,6 +98,18 @@ class MainActivity : AppCompatActivity(), LogListener {
 			w.setLayout(width, height)
 		}
 		runOnUiThread { ad.show() }
+	}
+
+	override fun onResume() {
+		super.onResume()
+		val window = this.window
+		window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+	}
+
+	override fun onPause() {
+		super.onPause()
+		val window = this.window
+		window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 	}
 
 	private var logField: TextView? = null
@@ -293,11 +309,12 @@ class MainActivity : AppCompatActivity(), LogListener {
 				} catch (ex: Exception) {
 					"2.1.1"
 				}
-				fullLog.append(currentVer).append('\n').append("Storage permission granted: ").append(
-					!doesNotHaveStoragePerm(
-						this
+				fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
+					.append(
+						!doesNotHaveStoragePerm(
+							this
+						)
 					)
-				)
 					.append('\n').append(logField!!.text)
 
 				handler!!.post {
