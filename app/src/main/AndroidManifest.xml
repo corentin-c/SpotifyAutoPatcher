@@ -11,6 +11,7 @@
         tools:ignore="ScopedStorage" />
     <application
         android:allowBackup="true"
+        android:extractNativeLibs="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"

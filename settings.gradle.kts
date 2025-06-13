@@ -18,6 +18,7 @@ val gprKey: String? = localProperties.getProperty("gpr.key")
 
 dependencyResolutionManagement {
     repositories {
+        maven { url = uri("https://jitpack.io") }
         maven {
             url = uri("https://maven.pkg.github.com/ReVanced/revanced-patcher")
             credentials {

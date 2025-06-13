@@ -1,53 +1,83 @@
 package com.corentinc.patcher
 
 import android.content.Context
-import android.util.Log
-import app.revanced.patcher.patch.loadPatchesFromJar
+import android.net.Uri
+import app.revanced.library.ApkUtils
+import app.revanced.library.ApkUtils.applyTo
+import app.revanced.patcher.Patcher
+import app.revanced.patcher.PatcherConfig
+import app.revanced.patcher.patch.loadPatchesFromDex
 import com.abdurazaaqmohammed.AntiSplit.R
-import com.abdurazaaqmohammed.AntiSplit.main.MainActivity
+import com.reandroid.apkeditor.merge.Merger.LogListener
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileOutputStream
 
-
 object CPatcher {
-	fun patch(activity: MainActivity) {
-		val file = File(activity.cacheDir, "patches.rvp")
-		file.setReadOnly()
-		copyRawResourceToFile(activity, R.raw.patches, file)
-		val patches = loadPatchesFromJar(setOf(file))
-		patches.forEach {
-			Log.i("KAPPA ", "$it.name")
+	fun patch(context: Context, apk: Uri, logListener: LogListener): File {
+		val patchesFile = File(context.cacheDir, "patches.rvp")
+		patchesFile.copyRawResourceToFile(context, R.raw.patches)
+		val patches =
+			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = context.codeCacheDir)
+		val spotifyPatches = patches.filter { patch ->
+			patch.compatiblePackages?.any { it.first == "com.spotify.music" } ?: false
 		}
-//		val patcherResult = Patcher(PatcherConfig(apkFile = File("some.apk"))).use { patcher ->
-//			// Here you can access metadata about the APK file through patcher.context.packageMetadata
-//			// such as package name, version code, version name, etc.
-//
-//			// Add patches.
-//			patcher += patches
-//
-//			// Execute the patches.
-//			runBlocking {
-//				patcher().collect { patchResult ->
-//					if (patchResult.exception != null)
-//						Log.i("", "\"${patchResult.patch}\" failed:\n${patchResult.exception}")
-//					else
-//						Log.i("", "\"${patchResult.patch}\" succeeded")
-//				}
-//			}
-//
-//			// Compile and save the patched APK file components.
-//			patcher.get()
-//		}
-//
-//// The result of the patcher contains the modified components of the APK file that can be repackaged into a new APK file.
-//		val dexFiles = patcherResult.dexFiles
-//		val resources = patcherResult.resources
+		val unpatchedApkFile = File(context.cacheDir, "spotify.apk")
+		unpatchedApkFile.copyUriToFile(context, apk)
+		val patcherResult =
+			Patcher(
+				PatcherConfig(
+					apkFile = unpatchedApkFile,
+					aaptBinaryPath = Aapt.binary(context).absolutePath,
+					temporaryFilesPath = context.filesDir,
+					frameworkFileDirectory = context.filesDir.path
+				)
+			).use { patcher ->
+				patcher += spotifyPatches.toSet()
+				runBlocking {
+					patcher().collect { patchResult ->
+						if (patchResult.exception != null)
+							logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception}")
+						else
+							logListener.onLog("\"${patchResult.patch}\" succeeded")
+					}
+				}
+
+				// Compile and save the patched APK file components.
+				patcher.get()
+			}
+		logListener.onLog("FINISHED PATCHING !!")
+		patcherResult.applyTo(unpatchedApkFile)
+		val signedPatchedApk = File(context.filesDir, "signedPatched.apk")
+		ApkUtils.signApk(
+			unpatchedApkFile,
+			signedPatchedApk,
+			"autoSpotify",
+			ApkUtils.KeyStoreDetails(
+				File(context.cacheDir, "autoSpotify.keystore"),
+				"autoSpotify.keystore.password",
+				"autoSpotify.key.alias",
+				"autoSpotify.key.password"
+			)
+		)
+
+
+		logListener.onLog("FINISHED SIGNING !!")
+		return signedPatchedApk
 	}
 
-	fun copyRawResourceToFile(context: Context, rawResId: Int, outputFile: File) {
+	private fun File.copyRawResourceToFile(context: Context, rawResId: Int) {
 		context.resources.openRawResource(rawResId).use { inputStream ->
-			FileOutputStream(outputFile).use { outputStream ->
+			FileOutputStream(this).use { outputStream ->
 				inputStream.copyTo(outputStream)
+			}
+		}
+	}
+
+	private fun File.copyUriToFile(context: Context, uri: Uri) {
+		context.contentResolver.openInputStream(uri).use { inputStream ->
+			FileOutputStream(this).use { outputStream ->
+				inputStream?.copyTo(outputStream) ?: throw Exception("Couldn't copy apk")
 			}
 		}
 	}

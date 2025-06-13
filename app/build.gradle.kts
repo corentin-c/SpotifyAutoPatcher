@@ -9,8 +9,8 @@ android {
 
     defaultConfig {
         applicationId = "com.abdurazaaqmohammed.AntiSplit"
-        minSdk = 21
-        targetSdk = 35
+        minSdk = 26
+        targetSdk = 33
         versionCode = 41
         versionName = "2.1.3"
         multiDexEnabled = true
@@ -51,4 +51,6 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("app.revanced:revanced-patcher:21.1.0-dev.1")
     implementation("app.revanced:patches:5.27.0-dev.2")
+    implementation("app.revanced:revanced-library-android:3.2.0-dev.1")
+    implementation("com.github.topjohnwu.libsu:nio:5.2.2")
 }

@@ -28,8 +28,10 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
+import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,7 +83,6 @@ import java.util.Objects;
 public class MainActivity extends AppCompatActivity implements Merger.LogListener {
     private static boolean ask = true;
     private static boolean showDialog;
-    private static boolean signApk;
     private static boolean selectSplitsForDevice;
     private Uri splitAPKUri;
     private ArrayList<Uri> uris;
@@ -113,7 +114,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
                 ? com.google.android.material.R.style.Theme_Material3_Dark_NoActionBar : com.google.android.material.R.style.Theme_Material3_Light_NoActionBar));
 
         DeviceSpecsUtil = new DeviceSpecsUtil(this);
-        CPatcher.INSTANCE.patch(this);
         setContentView(R.layout.activity_main);
         if (theme == R.style.Theme_MyApp_Black)
             findViewById(R.id.main).setBackgroundColor(Color.BLACK);
@@ -137,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
         }
 
         LogUtil.setLogListener(this);
+        logEnabled = true;
 
         // Check if user shared or opened file with the app.
         final Intent openIntent = getIntent();
@@ -251,7 +252,6 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
                 .putBoolean("logEnabled", logEnabled)
                 .putBoolean("ask", ask)
                 .putBoolean("showDialog", showDialog)
-                .putBoolean("signApk", signApk)
                 .putBoolean("systemTheme", systemTheme)
                 .putBoolean("selectSplitsForDevice", selectSplitsForDevice)
                 .putInt("theme", theme)
@@ -267,8 +267,14 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
 
     @Override
     public void onLog(CharSequence msg) {
+        onLog(msg.toString());
+    }
+
+    @Override
+    public void onLog(String log) {
+        Log.i("", log);
         runOnUiThread(() -> {
-            logField.append(new StringBuilder(msg).append('\n'));
+            logField.append(new StringBuilder(log).append('\n'));
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         });
     }
@@ -407,10 +413,10 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
                             uris[0],
                             activity,
                             splits,
-                            signApk);
+                            true);
                 } else try (ApkBundle bundle = new ApkBundle()) {
                     bundle.loadApkDirectory(new File(activity.getPackageManager().getPackageInfo(packageNameFromAppList, 0).applicationInfo.sourceDir).getParentFile(), false, activity);
-                    Merger.run(bundle, cacheDir, uris[0], activity, signApk);
+                    Merger.run(bundle, cacheDir, uris[0], activity, true);
                 }
             } catch (Exception e) {
                 activity.showError(e);
@@ -662,13 +668,14 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
             final String success = rss.getString(R.string.success_saved);
             LogUtil.logMessage(success);
             runOnUiThread(() -> Toast.makeText(this, success, Toast.LENGTH_SHORT).show());
-            if (signApk && Merger.signedApk != null) {
+            if (Merger.signedApk != null) {
+                File patchedApk = CPatcher.INSTANCE.patch(getApplicationContext(), Merger.signedApk, this);
                 installButton.setVisibility(View.VISIBLE);
-                installButton.setOnClickListener(v ->          //if (supportsFileChannel && !getPackageManager().canRequestPackageInstalls()) startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).setData(Uri.parse(String.format("package:%s", getPackageName()))), 1234);
+                installButton.setOnClickListener(v ->
                         startActivity(new Intent(Intent.ACTION_INSTALL_PACKAGE)
                                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                .setData(Merger.signedApk)));
+                                .setData(FileProvider.getUriForFile(getApplicationContext(), "com.abdurazaaqmohammed.AntiSplit.provider", patchedApk))));
             } else installButton.setVisibility(View.GONE);
         }
     }

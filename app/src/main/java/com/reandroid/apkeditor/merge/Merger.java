@@ -61,6 +61,7 @@ public class Merger {
 
     public interface LogListener {
         void onLog(CharSequence log);
+        void onLog(String log);
 
         void onLog(int resID);
     }
