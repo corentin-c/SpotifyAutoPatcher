@@ -5,9 +5,26 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+val localProperties = java.util.Properties()
+val localPropertiesFile = File(rootDir, "local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+val gprUser: String? = localProperties.getProperty("gpr.user")
+val gprKey: String? = localProperties.getProperty("gpr.key")
+
+
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/ReVanced/revanced-patcher")
+            credentials {
+                username = localProperties.getProperty("gpr.user") as String?
+                password = localProperties.getProperty("gpr.key") as String?
+            }
+        }
         google()
         mavenCentral()
     }

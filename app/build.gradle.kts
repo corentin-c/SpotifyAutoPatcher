@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -8,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.abdurazaaqmohammed.AntiSplit"
-        minSdk = 19
+        minSdk = 21
         targetSdk = 35
         versionCode = 41
         versionName = "2.1.3"
@@ -27,20 +28,27 @@ android {
     }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         viewBinding = false
     }
-    dependencies {
-        coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
-        implementation("com.google.android.material:material:1.12.0")
-    }
+
     dependenciesInfo {
         // Disables dependency metadata when building APKs.
-        includeInApk = false
+       includeInApk = false
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
+    kotlinOptions {
+        jvmTarget = "21"
+    }
+}
+dependencies {
+    implementation("androidx.core:core-ktx:1.16.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("app.revanced:revanced-patcher:21.1.0-dev.1")
+    implementation("app.revanced:patches:5.27.0-dev.2")
 }
