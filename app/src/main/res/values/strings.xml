@@ -88,4 +88,8 @@
     <string name="before_start_message">Make sure the UNPATCHED Spotify app is installed from the Google play store, before clicking on Start</string>
     <string name="app_not_found_error">Couldn\'t find the Spotify app on your phone, make sure the UNPATCHED Spotify app is installed from the Google play store and not disabled on your phone</string>
     <string name="ready_to_install">"Ready to install your patched version of Spotify ! Uninstall the Spotify app from your phone before clicking install button "</string>
+    <string name="network_unavailable_error">Network connection unavailable. Please make sure you have a stable internet connection and try again</string>
+    <string name="retry">Retry</string>
+    <string name="start">Start</string>
+    <string name="ok">Ok</string>
 </resources>

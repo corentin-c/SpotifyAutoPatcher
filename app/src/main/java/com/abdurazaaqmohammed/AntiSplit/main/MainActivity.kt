@@ -43,6 +43,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import java.net.UnknownHostException
 import java.nio.channels.ClosedByInterruptException
 import java.util.Objects
 
@@ -64,7 +65,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		LogUtil.logEnabled = true
 		showAlertDialog(
 			getString(R.string.before_start_message),
-			positiveButtonText = "Start",
+			positiveButtonText = getString(R.string.start),
 			positiveButtonAction = {
 				pkgName = PACKAGE_TO_PATCH
 				val file = File(applicationContext.cacheDir.path + "unpatched.apk")
@@ -183,10 +184,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		text: String,
 		positiveButtonText: String,
 		positiveButtonAction: () -> Unit,
-		neutralButtonText: String? = null,
-		neutralButtonAction: (() -> Unit)? = null,
-		negativeButtonText: String? = null,
-		negativeButtonAction: (() -> Unit)? = null,
 	) {
 		runOnUiThread {
 			val builder = MaterialAlertDialogBuilder(this)
@@ -196,26 +193,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 			) { dialog: DialogInterface, _: Int ->
 				positiveButtonAction()
 				dialog.dismiss()
-			}
-			neutralButtonText?.let {
-				neutralButtonAction?.let {
-					builder.setNeutralButton(
-						neutralButtonText
-					) { dialog: DialogInterface, _: Int ->
-						neutralButtonAction()
-						dialog.dismiss()
-					}
-				}
-			}
-			negativeButtonText?.let {
-				negativeButtonAction?.let {
-					builder.setNegativeButton(
-						negativeButtonText
-					) { dialog: DialogInterface, _: Int ->
-						negativeButtonAction()
-						dialog.dismiss()
-					}
-				}
 			}
 
 			styleAlertDialog(builder.create())
@@ -256,7 +233,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 						View.GONE
 					showAlertDialog(
 						getString(R.string.ready_to_install),
-						positiveButtonText = "Ok",
+						positiveButtonText = getString(R.string.ok),
 						positiveButtonAction = {
 							// empty
 						},
@@ -280,78 +257,92 @@ class MainActivity : AppCompatActivity(), LogListener {
 		).show()
 	}
 
-	private fun showError(e: Throwable) {
-		if (e is NameNotFoundException) {
-			showAlertDialog(
-				getString(R.string.app_not_found_error),
-				positiveButtonText = "Retry",
-				positiveButtonAction = {
-					cancel()
-				},
-			)
-		} else if (e !is ClosedByInterruptException) {
-			val mainErr = e.toString()
-			errorOccurred = mainErr != this.getString(R.string.sign_failed)
-
-			val stackTrace = StringBuilder(mainErr)
-
-			for (line in e.stackTrace) stackTrace.append(line).append('\n')
-			val fullLog = StringBuilder(stackTrace).append('\n')
-				.append("SDK ").append(Build.VERSION.SDK_INT).append('\n')
-				.append(this.getString(R.string.app_name)).append(' ')
-			val currentVer = try {
-				packageManager.getPackageInfo(packageName, 0).versionName
-			} catch (ex: Exception) {
-				"2.1.1"
-			}
-			fullLog.append(currentVer).append('\n').append("Storage permission granted: ").append(
-				!doesNotHaveStoragePerm(
-					this
+	private fun showError(error: Throwable) {
+		when (error) {
+			is NameNotFoundException -> {
+				showAlertDialog(
+					getString(R.string.app_not_found_error),
+					positiveButtonText = getString(R.string.retry),
+					positiveButtonAction = {
+						cancel()
+					},
 				)
-			)
-				.append('\n').append(logField!!.text)
+			}
 
-			handler!!.post {
-				runOnUiThread {
-					val dialogView = layoutInflater.inflate(
-						R.layout.dialog_button_layout,
-						null
+			is UnknownHostException -> {
+				showAlertDialog(
+					getString(R.string.network_unavailable_error),
+					positiveButtonText = getString(R.string.retry),
+					positiveButtonAction = {
+						cancel()
+					},
+				)
+			}
+
+			!is ClosedByInterruptException -> {
+				val mainErr = error.toString()
+				errorOccurred = mainErr != this.getString(R.string.sign_failed)
+
+				val stackTrace = StringBuilder(mainErr)
+
+				for (line in error.stackTrace) stackTrace.append(line).append('\n')
+				val fullLog = StringBuilder(stackTrace).append('\n')
+					.append("SDK ").append(Build.VERSION.SDK_INT).append('\n')
+					.append(this.getString(R.string.app_name)).append(' ')
+				val currentVer = try {
+					packageManager.getPackageInfo(packageName, 0).versionName
+				} catch (ex: Exception) {
+					"2.1.1"
+				}
+				fullLog.append(currentVer).append('\n').append("Storage permission granted: ").append(
+					!doesNotHaveStoragePerm(
+						this
 					)
-					(dialogView.findViewById<View>(R.id.errorD) as TextView).text =
-						stackTrace
+				)
+					.append('\n').append(logField!!.text)
 
-					styleAlertDialog(
-						MaterialAlertDialogBuilder(this)
-							.setTitle(mainErr)
-							.setView(dialogView)
-							.setPositiveButton(
-								this.getString(R.string.copy_log)
-							) { dialog: DialogInterface, _: Int ->
-								copyText(fullLog)
-								dialog.dismiss()
-							}
-							.setNegativeButton(
-								this.getString(R.string.create_issue)
-							) { dialog: DialogInterface, _: Int ->
-								startActivity(
-									Intent(
-										Intent.ACTION_VIEW,
-										"https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
+				handler!!.post {
+					runOnUiThread {
+						val dialogView = layoutInflater.inflate(
+							R.layout.dialog_button_layout,
+							null
+						)
+						(dialogView.findViewById<View>(R.id.errorD) as TextView).text =
+							stackTrace
+
+						styleAlertDialog(
+							MaterialAlertDialogBuilder(this)
+								.setTitle(mainErr)
+								.setView(dialogView)
+								.setPositiveButton(
+									this.getString(R.string.copy_log)
+								) { dialog: DialogInterface, _: Int ->
+									copyText(fullLog)
+									dialog.dismiss()
+								}
+								.setNegativeButton(
+									this.getString(R.string.create_issue)
+								) { dialog: DialogInterface, _: Int ->
+									startActivity(
+										Intent(
+											Intent.ACTION_VIEW,
+											"https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
+										)
 									)
-								)
-								dialog.dismiss()
-							}
-							.setNeutralButton(
-								this.getString(R.string.cancel)
-							) { dialog: DialogInterface, which: Int -> dialog.dismiss() }
-							.create())
-					val scrollView =
-						dialogView.findViewById<ScrollView>(R.id.errorView)
+									dialog.dismiss()
+								}
+								.setNeutralButton(
+									this.getString(R.string.cancel)
+								) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
+								.create())
+						val scrollView =
+							dialogView.findViewById<ScrollView>(R.id.errorView)
 
-					val params = scrollView.layoutParams
-					params.height =
-						(this.resources.displayMetrics.heightPixels * 0.5).toInt()
-					scrollView.layoutParams = params
+						val params = scrollView.layoutParams
+						params.height =
+							(this.resources.displayMetrics.heightPixels * 0.5).toInt()
+						scrollView.layoutParams = params
+					}
 				}
 			}
 		}
