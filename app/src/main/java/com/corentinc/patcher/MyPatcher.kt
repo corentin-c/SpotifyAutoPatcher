@@ -7,7 +7,7 @@ import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
 import app.revanced.patcher.patch.loadPatchesFromDex
-import com.abdurazaaqmohammed.AntiSplit.R
+import com.github.corentinc.SpotifyAutoPatcher.R
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import java.io.File
 import java.io.FileOutputStream

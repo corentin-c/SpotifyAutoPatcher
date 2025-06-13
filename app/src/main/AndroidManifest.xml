@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:largeHeap="true">
         <activity
-            android:name=".main.MainActivity"
+            android:name="com.abdurazaaqmohammed.AntiSplit.main.MainActivity"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar"
             android:exported="true"
             android:configChanges="uiMode|screenSize|orientation">

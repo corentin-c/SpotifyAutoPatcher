@@ -34,8 +34,8 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
-import com.abdurazaaqmohammed.AntiSplit.R
 import com.corentinc.patcher.ReVancedPatcher.patch
+import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.reandroid.apk.ApkBundle
 import com.reandroid.apkeditor.merge.LogUtil

@@ -31,5 +31,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AntiSplit M"
+rootProject.name = "Spotify Auto Patcher"
 include(":app")

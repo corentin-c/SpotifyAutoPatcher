@@ -21,10 +21,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
-import com.abdurazaaqmohammed.AntiSplit.R;
 import com.abdurazaaqmohammed.AntiSplit.main.DeviceSpecsUtil;
 import com.abdurazaaqmohammed.AntiSplit.main.MainActivity;
 import com.abdurazaaqmohammed.AntiSplit.main.MismatchedSplitsException;
+import com.github.corentinc.SpotifyAutoPatcher.R;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.j256.simplezip.ZipFileInput;
 import com.j256.simplezip.format.ZipFileHeader;

@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "com.abdurazaaqmohammed.AntiSplit"
+    namespace = "com.github.corentinc.SpotifyAutoPatcher"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.abdurazaaqmohammed.AntiSplit"
+        applicationId = "com.github.corentinc.SpotifyAutoPatcher"
         minSdk = 26
         targetSdk = 33
-        versionCode = 41
-        versionName = "2.1.3"
+        versionCode = 1
+        versionName = "0.0.1"
         multiDexEnabled = true
     }
 

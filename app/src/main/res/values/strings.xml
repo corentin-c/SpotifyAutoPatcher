@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">AntiSplit M</string>
+    <string name="app_name" translatable="false">Spotify Auto Patcher</string>
     <string name="merge">Select split APK to Merge/AntiSplit</string>
     <string name="success_saved">File saved successfully</string>
     <string name="enable_logs" >Enable logs</string>
