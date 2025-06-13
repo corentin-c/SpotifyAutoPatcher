@@ -164,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements Merger.LogListene
         boolean realAskValue = ask;
         ask = true;
         pkgName = "com.spotify.music";
-        selectDirToSaveAPKOrSaveNow();
+        process(Uri.fromFile(new File(getApplicationContext().getCacheDir().getPath() + "spotify.apk")));
         ask = realAskValue;
     }
 
