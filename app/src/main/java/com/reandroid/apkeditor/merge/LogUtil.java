@@ -1,7 +1,5 @@
 package com.reandroid.apkeditor.merge;
 
-import com.reandroid.apkeditor.merge.Merger;
-
 public class LogUtil {
     private static Merger.LogListener logListener;
 
@@ -16,6 +14,7 @@ public class LogUtil {
             logListener.onLog(msg);
         }
     }
+
     public static void logMessage(int resID) {
         if (logListener != null && logEnabled) {
             logListener.onLog(resID);

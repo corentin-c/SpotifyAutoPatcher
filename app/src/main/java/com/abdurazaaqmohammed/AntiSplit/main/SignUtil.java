@@ -12,7 +12,6 @@ import com.android.apksig.apk.ApkFormatException;
 import com.reandroid.apkeditor.merge.LogUtil;
 import com.starry.FileUtils;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,7 +59,7 @@ public class SignUtil {
     }
 
     public static void signPseudoApkSigner(File temp, Context context, Uri out, Exception e) throws IOException {
-        String msg = com.abdurazaaqmohammed.AntiSplit.main.MainActivity.rss.getString(R.string.sign_failed);
+        String msg = context.getString(R.string.sign_failed);
         if(Build.VERSION.SDK_INT < 30) {
             // When I tried signing with apksig in AVD with sdk 10 java.security is throwing some error saying something not found
             // Apparently 11 is the last version that supports v1 signing alone.

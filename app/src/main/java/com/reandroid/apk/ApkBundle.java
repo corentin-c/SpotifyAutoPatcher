@@ -15,7 +15,6 @@
   */
 package com.reandroid.apk;
 
-import static com.abdurazaaqmohammed.AntiSplit.main.MainActivity.rss;
 
 import android.content.Context;
 import android.content.Intent;
@@ -36,7 +35,12 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class ApkBundle implements Closeable {
@@ -183,7 +187,7 @@ public class ApkBundle implements Closeable {
             if(versionCodes[i] != base) {
                 File f = apkList.get(i);
                 String name = f.getName();
-                LogUtil.logMessage(name + rss.getString(R.string.mismatch_base));
+                LogUtil.logMessage(name + context.getString(R.string.mismatch_base));
                 if(DeviceSpecsUtil.isArch(name)) throw new MismatchedSplitsException("Error: Key (the app will not run without it) split (" + name + ") has a mismatched version code.");
                 if(name.contains("dpi")) mismatchedDpis.add(f);
                 else mismatchedLangs.append(", ").append(name);
@@ -204,14 +208,14 @@ public class ApkBundle implements Closeable {
             final CountDownLatch latch = new CountDownLatch(1);
             MainActivity act = ((MainActivity) context);
             act.getHandler().post(() ->
-                    act.runOnUiThread(new MaterialAlertDialogBuilder(context).setTitle(rss.getString(R.string.warning)).setMessage(rss.getString(R.string.mismatch, s.replaceFirst(", ", "")))
+                    act.runOnUiThread(new MaterialAlertDialogBuilder(context).setTitle(context.getString(R.string.warning)).setMessage(context.getString(R.string.mismatch, s.replaceFirst(", ", "")))
                             .setPositiveButton("OK", (dialog, which) -> {
                                 for(String filename : s.split(", ")) {
                                     File f = new File(dir, filename);
                                     if(f.delete()) apkList.remove(f);
                                 }
                                 latch.countDown();
-                            }).setNegativeButton(rss.getString(R.string.cancel), (dialog, which) -> {
+                            }).setNegativeButton(context.getString(R.string.cancel), (dialog, which) -> {
                                 act.startActivity(new Intent(act, MainActivity.class));
                                 act.finishAffinity();
                                 latch.countDown();

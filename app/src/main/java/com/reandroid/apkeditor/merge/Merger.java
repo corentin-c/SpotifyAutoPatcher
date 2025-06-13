@@ -15,7 +15,6 @@
  */
 package com.reandroid.apkeditor.merge;
 
-import static com.abdurazaaqmohammed.AntiSplit.main.MainActivity.rss;
 import static com.reandroid.apkeditor.merge.LogUtil.logMessage;
 
 import android.content.Context;
@@ -61,17 +60,14 @@ public class Merger {
 
     public interface LogListener {
         void onLog(CharSequence log);
+
         void onLog(String log);
 
         void onLog(int resID);
     }
 
-
-
-
-    /** @noinspection ResultOfMethodCallIgnored*/
     private static void extractAndLoad(Uri in, File cacheDir, Context context, List<String> splits, ApkBundle bundle) throws IOException, MismatchedSplitsException, InterruptedException {
-         logMessage(in.getPath());
+        logMessage(in.getPath());
         boolean checkSplits = splits != null && !splits.isEmpty();
         try (InputStream is = FileUtils.getInputStream(in, context);
              ZipFileInput zis = new ZipFileInput(is)) {
@@ -80,17 +76,18 @@ public class Merger {
                 String name = header.getFileName();
                 if (name.endsWith(".apk")) {
                     if ((checkSplits && splits.contains(name)))
-                        logMessage(MainActivity.rss.getString(R.string.skipping) + name + MainActivity.rss.getString(R.string.unselected));
+                        logMessage(context.getString(R.string.skipping) + name + context.getString(R.string.unselected));
                     else {
                         File file = new File(cacheDir, name);
                         if (file.getCanonicalPath().startsWith(cacheDir.getCanonicalPath() + File.separator))
                             zis.readFileDataToFile(file);
-                        else throw new IOException("Zip entry is outside of the target dir: " + name);
+                        else
+                            throw new IOException("Zip entry is outside of the target dir: " + name);
 
                         logMessage("Extracted " + name);
                     }
                 } else
-                    logMessage(MainActivity.rss.getString(R.string.skipping) + name + MainActivity.rss.getString(R.string.not_apk));
+                    logMessage(context.getString(R.string.skipping) + name + context.getString(R.string.not_apk));
             }
             bundle.loadApkDirectory(cacheDir, false, context);
         } catch (MismatchedSplitsException m) {
@@ -104,29 +101,30 @@ public class Merger {
             if (DeviceSpecsUtil.zipFile == null) {
                 File input = new File(FileUtils.getPath(in, context));
                 boolean couldNotRead = !input.canRead();
-                if (couldNotRead) try(InputStream is = context.getContentResolver().openInputStream(in)) {
-                    FileUtils.copyFile(is, input = new File(cacheDir, input.getName()));
-                }
+                if (couldNotRead)
+                    try (InputStream is = context.getContentResolver().openInputStream(in)) {
+                        FileUtils.copyFile(is, input = new File(cacheDir, input.getName()));
+                    }
                 ArchiveFile zf = new ArchiveFile(input);
-                extractZipFile(zf, checkSplits, splits, cacheDir);
+                extractZipFile(zf, checkSplits, splits, cacheDir, context);
                 if (couldNotRead) input.delete();
-            } else extractZipFile(DeviceSpecsUtil.zipFile, checkSplits, splits, cacheDir);
+            } else extractZipFile(DeviceSpecsUtil.zipFile, checkSplits, splits, cacheDir, context);
             bundle.loadApkDirectory(cacheDir, false, context);
         }
     }
 
-    private static void extractZipFile(ArchiveFile zf, boolean checkSplits, List<String> splits, File cacheDir) throws IOException {
-        for(InputSource archiveEntry : zf.createZipEntryMap().toArray()) {
+    private static void extractZipFile(ArchiveFile zf, boolean checkSplits, List<String> splits, File cacheDir, Context context) throws IOException {
+        for (InputSource archiveEntry : zf.createZipEntryMap().toArray()) {
             String name = archiveEntry.getName();
             if (name.endsWith(".apk")) {
                 if ((checkSplits && splits.contains(name)))
-                    logMessage(MainActivity.rss.getString(R.string.skipping) + name + MainActivity.rss.getString(R.string.unselected));
+                    logMessage(context.getString(R.string.skipping) + name + context.getString(R.string.unselected));
                 else try (OutputStream os = FileUtils.getOutputStream(new File(cacheDir, name));
                           InputStream is = archiveEntry.openStream()) {
                     FileUtils.copyFile(is, os);
                 }
             } else
-                logMessage(MainActivity.rss.getString(R.string.skipping) + name + MainActivity.rss.getString(R.string.not_apk));
+                logMessage(context.getString(R.string.skipping) + name + context.getString(R.string.not_apk));
         }
     }
 
@@ -134,25 +132,26 @@ public class Merger {
         logMessage("Found modules: " + bundle.getApkModuleList().size());
         final boolean[] saveToCacheDir = {false};
         final boolean[] sign = {signApk};
-        for(File split : cacheDir.listFiles()) {
+        for (File split : cacheDir.listFiles()) {
             String splitName = split.getName();
             String arch = null;
             String var = "x86";
-            if(splitName.contains(var)) arch = var;
-            else if(splitName.contains(var = "x86_64") || splitName.contains("x86-64") || splitName.contains("x64")) arch = var;
-            else if(splitName.contains("arm64")) arch = "arm64-v8a";
-            else if(splitName.contains("v7a") || splitName.contains("arm7")) arch = "armeabi-v7a";
-            if(arch != null) try (ApkModule zf = ApkModule.loadApkFile(split, splitName)) {
+            if (splitName.contains(var)) arch = var;
+            else if (splitName.contains(var = "x86_64") || splitName.contains("x86-64") || splitName.contains("x64"))
+                arch = var;
+            else if (splitName.contains("arm64")) arch = "arm64-v8a";
+            else if (splitName.contains("v7a") || splitName.contains("arm7")) arch = "armeabi-v7a";
+            if (arch != null) try (ApkModule zf = ApkModule.loadApkFile(split, splitName)) {
                 if (zf.containsFile("lib" + File.separator + arch + File.separator + "libpairipcore.so")) {
                     final CountDownLatch latch = new CountDownLatch(1);
                     MainActivity act = ((MainActivity) context);
                     act.getHandler().post(() ->
-                            act.runOnUiThread(new MaterialAlertDialogBuilder(context).setTitle(rss.getString(R.string.warning)).setMessage(R.string.pairip_warning)
+                            act.runOnUiThread(new MaterialAlertDialogBuilder(context).setTitle(context.getString(R.string.warning)).setMessage(R.string.pairip_warning)
                                     .setPositiveButton("OK", (dialog, which) -> {
                                         saveToCacheDir[0] = true;
                                         sign[0] = false;
                                         latch.countDown();
-                                    }).setNegativeButton(rss.getString(R.string.cancel), (dialog, which) -> {
+                                    }).setNegativeButton(context.getString(R.string.cancel), (dialog, which) -> {
                                         act.startActivity(new Intent(act, MainActivity.class));
                                         act.finishAffinity();
                                         latch.countDown();
@@ -166,7 +165,7 @@ public class Merger {
         try (ApkModule mergedModule = bundle.mergeModules()) {
             if (mergedModule.hasAndroidManifest()) {
                 AndroidManifestBlock manifest = mergedModule.getAndroidManifest();
-                logMessage(MainActivity.rss.getString(R.string.sanitizing_manifest));
+                logMessage(context.getString(R.string.sanitizing_manifest));
                 int ID_requiredSplitTypes = 0x0101064e;
                 int ID_splitTypes = 0x0101064f;
 
@@ -220,7 +219,7 @@ public class Merger {
                                                     continue;
                                                 }
                                                 String path = resValue.getValueAsString();
-                                                logMessage(MainActivity.rss.getString(R.string.removed_table_entry) + " " + path);
+                                                logMessage(context.getString(R.string.removed_table_entry) + " " + path);
                                                 //Remove file entry
                                                 zipEntryMap.remove(path);
                                                 // It's not safe to destroy entry, resource id might be used in dex code.
@@ -244,20 +243,23 @@ public class Merger {
                 }
                 manifest.refresh();
             }
-            logMessage(MainActivity.rss.getString(R.string.saving));
+            logMessage(context.getString(R.string.saving));
 
             File temp;
             if (sign[0]) {
                 mergedModule.writeApk(temp = new File(cacheDir, "temp.apk"));
-                logMessage(MainActivity.rss.getString(R.string.signing));
+                logMessage(context.getString(R.string.signing));
                 boolean saveToCache = MainActivity.doesNotHaveStoragePerm(context);
                 String p;
                 File signed = new File(saveToCache || (saveToCache = TextUtils.isEmpty(p = FileUtils.getPath(out, context))) ? (cacheDir + File.separator + "signed.apk") : p);
                 try {
                     SignUtil.signDebugKey(context, temp, signed);
-                    if (saveToCache) try(OutputStream os = context.getContentResolver().openOutputStream(signedApk = out)) {
-                        FileUtils.copyFile(signed, os);
-                    } else signedApk = FileProvider.getUriForFile(context, "com.abdurazaaqmohammed.AntiSplit.provider", signed);
+                    if (saveToCache)
+                        try (OutputStream os = context.getContentResolver().openOutputStream(signedApk = out)) {
+                            FileUtils.copyFile(signed, os);
+                        }
+                    else
+                        signedApk = FileProvider.getUriForFile(context, "com.abdurazaaqmohammed.AntiSplit.provider", signed);
                 } catch (Exception e) {
                     SignUtil.signPseudoApkSigner(temp, context, out, e);
                 }
@@ -274,9 +276,10 @@ public class Merger {
     public static Uri signedApk;
 
     public static void run(Uri in, File cacheDir, Uri out, Context context, List<String> splits, boolean signApk) throws Exception {
-        logMessage(com.abdurazaaqmohammed.AntiSplit.main.MainActivity.rss.getString(R.string.searching));
+        context.getString(R.string.searching);
         try (ApkBundle bundle = new ApkBundle()) {
-            if (in == null) bundle.loadApkDirectory(cacheDir, false, context); // Multiple splits from a split apk, already copied to cache dir
+            if (in == null)
+                bundle.loadApkDirectory(cacheDir, false, context); // Multiple splits from a split apk, already copied to cache dir
             else extractAndLoad(in, cacheDir, context, splits, bundle);
             run(bundle, cacheDir, out, context, signApk);
         }
