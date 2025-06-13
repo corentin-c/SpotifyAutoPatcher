@@ -9,6 +9,14 @@ Whats it does :
 - Rebuild the APK
 - Allow you to install the APK after you uninstalled the store version
 
+But this app :
+- Cannot patch anything else than Spotify
+- Cannot patch an already patched version of Spotify
+- Cannot patch a version of Spotify installed from an APK
+- Doesn't allow you to choose which patches are applied
+- Doesn't allow you to save the patched APK
+- Cannot uninstall Spotify before you install the patched version, you have to do it manually
+
 ## Usage
 
 - Uninstall your patched version of Spotify if you already have one
