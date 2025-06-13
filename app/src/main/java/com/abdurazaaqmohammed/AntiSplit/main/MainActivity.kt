@@ -10,7 +10,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -26,8 +25,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
@@ -45,7 +42,6 @@ import com.reandroid.apkeditor.merge.Merger.signedApk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.lang.ref.WeakReference
 import java.nio.channels.ClosedByInterruptException
 import java.util.Objects
 
@@ -63,11 +59,18 @@ class MainActivity : AppCompatActivity(), LogListener {
 		logField = findViewById(R.id.logField)
 		LogUtil.setLogListener(this)
 		LogUtil.logEnabled = true
-		pkgName = "com.spotify.music"
-		val file = File(applicationContext.cacheDir.path + "spotify.apk")
-		val uri = Uri.fromFile(file)
-		signedApk = uri
-		process(uri)
+		showAlertDialog(
+			getString(R.string.before_start_message),
+			positiveButtonText = "Start",
+			positiveButtonAction = {
+				pkgName = "com.spotify.music"
+				val file = File(applicationContext.cacheDir.path + "spotify.apk")
+				val uri = Uri.fromFile(file)
+				signedApk = uri
+				process(uri)
+			},
+		)
+
 	}
 
 	private fun styleAlertDialog(ad: AlertDialog) {
@@ -135,38 +138,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		super.onDestroy()
 	}
 
-	private class ProcessTask(context: MainActivity, private val packageNameFromAppList: String?) :
-		AsyncTask<Uri?, Void?, Void?>() {
-		private val activityReference = WeakReference(context)
-
-		override fun doInBackground(vararg params: Uri?): Void? {
-			val activity = activityReference.get() ?: return null
-
-			val cacheDir = activity.cacheDir
-			deleteDir(cacheDir)
-			try {
-				val bundle = ApkBundle()
-				bundle.loadApkDirectory(
-					File(
-						activity.packageManager.getPackageInfo(
-							packageNameFromAppList!!, 0
-						).applicationInfo!!.sourceDir
-					).parentFile, false, activity
-				)
-				Merger.run(bundle, cacheDir, params[0], activity, false)
-			} catch (e: Exception) {
-				activity.showError(e)
-			}
-			return null
-		}
-
-		override fun onPostExecute(result: Void?) {
-			val activity = activityReference.get()
-			activity!!.pkgName = null
-			activity.showSuccess()
-		}
-	}
-
 	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		super.onActivityResult(requestCode, resultCode, data)
 		if (resultCode == RESULT_OK && data != null && requestCode == 0) {
@@ -174,33 +145,16 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
-	private val launcher = registerForActivityResult(
-		StartIntentSenderForResult()
-	) { result: ActivityResult ->
-		if (result.resultCode == RESULT_OK) LogUtil.logMessage("Deleted ")
-	}
-
 	private fun process(outputUri: Uri) {
 		onLog("Merging APK...")
 		findViewById<View>(R.id.installButton).visibility =
 			View.GONE
-		val processTask = ProcessTask(this, pkgName)
-		processTask.execute(outputUri)
 		val fabs = findViewById<LinearLayout>(R.id.fabs)
 		fabs.alpha = 0.5f
 		val cancelButton = findViewById<View>(R.id.cancelButton)
 		cancelButton.visibility = View.VISIBLE
 		cancelButton.setOnClickListener { v: View? ->
-			var intent = packageManager.getLaunchIntentForPackage(packageName)
-			if (intent == null) {
-				processTask.cancel(true)
-				intent = getIntent()
-				finish()
-				startActivity(intent)
-			} else {
-				startActivity(Intent.makeRestartActivityTask(intent.component))
-				Runtime.getRuntime().exit(0)
-			}
+			cancel()
 		}
 
 		val copyButton = findViewById<View>(R.id.copyButton)
@@ -212,6 +166,79 @@ class MainActivity : AppCompatActivity(), LogListener {
 				).append('\n')
 					.append((findViewById<View>(R.id.errorField) as TextView).text)
 			)
+		}
+		lifecycleScope.launch(Dispatchers.Default) {
+			try {
+				val cacheDir = this@MainActivity.cacheDir
+				deleteDir(cacheDir)
+					val bundle = ApkBundle()
+					bundle.loadApkDirectory(
+						File(
+							this@MainActivity.packageManager.getPackageInfo(
+								pkgName!!, 0
+							).applicationInfo!!.sourceDir
+						).parentFile, false, this@MainActivity
+					)
+					Merger.run(bundle, cacheDir, outputUri, this@MainActivity, false)
+					this@MainActivity.showSuccess()
+			} catch (exception: Exception) {
+				this@MainActivity.showError(exception)
+			}
+		}
+	}
+
+	private fun cancel() {
+		var intent = packageManager.getLaunchIntentForPackage(packageName)
+		if (intent == null) {
+			intent = getIntent()
+			finish()
+			startActivity(intent)
+		} else {
+			startActivity(Intent.makeRestartActivityTask(intent.component))
+			Runtime.getRuntime().exit(0)
+		}
+	}
+
+	private fun showAlertDialog(
+		text: String,
+		positiveButtonText: String,
+		positiveButtonAction: () -> Unit,
+		neutralButtonText: String? = null,
+		neutralButtonAction: (() -> Unit)? = null,
+		negativeButtonText: String? = null,
+		negativeButtonAction: (() -> Unit)? = null,
+	) {
+		runOnUiThread {
+			val builder = MaterialAlertDialogBuilder(this)
+			builder.setMessage(text)
+			builder.setPositiveButton(
+				positiveButtonText
+			) { dialog: DialogInterface, _: Int ->
+				positiveButtonAction()
+				dialog.dismiss()
+			}
+			neutralButtonText?.let {
+				neutralButtonAction?.let {
+					builder.setNeutralButton(
+						neutralButtonText
+					) { dialog: DialogInterface, _: Int ->
+						neutralButtonAction()
+						dialog.dismiss()
+					}
+				}
+			}
+			negativeButtonText?.let {
+				negativeButtonAction?.let {
+					builder.setNegativeButton(
+						negativeButtonText
+					) { dialog: DialogInterface, _: Int ->
+						negativeButtonAction()
+						dialog.dismiss()
+					}
+				}
+			}
+
+			styleAlertDialog(builder.create())
 		}
 	}
 
@@ -245,9 +272,17 @@ class MainActivity : AppCompatActivity(), LogListener {
 							)
 						}
 						installButton.visibility = View.VISIBLE
-						onLog("Ready to install APK !")
+						onLog("Ready to install APK ! Uninstall existing package first before clicking on install")
 						findViewById<View>(R.id.cancelButton).visibility =
 							View.GONE
+						showAlertDialog(
+							getString(R.string.ready_to_install),
+							positiveButtonText = "Ok",
+							positiveButtonAction = {
+								// empty
+							},
+						)
+
 					}
 				}
 			} else installButton.visibility = View.GONE
