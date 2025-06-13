@@ -1,6 +1,9 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    // remove if you don't want firebase
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -54,4 +57,9 @@ dependencies {
     implementation("app.revanced:revanced-library-android:3.2.0-dev.1")
     implementation("com.github.topjohnwu.libsu:nio:5.2.2")
     implementation("com.google.code.gson:gson:2.13.1")
+
+    // remove if you don't want firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
 }

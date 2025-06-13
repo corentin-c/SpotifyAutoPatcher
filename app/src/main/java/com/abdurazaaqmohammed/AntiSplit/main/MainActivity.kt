@@ -336,7 +336,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 								startActivity(
 									Intent(
 										Intent.ACTION_VIEW,
-										"https://github.com/AbdurazaaqMohammed/AntiSplit-M/issues/new?title=Crash%20Report&body=$fullLog".toUri()
+										"https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
 									)
 								)
 								dialog.dismiss()
