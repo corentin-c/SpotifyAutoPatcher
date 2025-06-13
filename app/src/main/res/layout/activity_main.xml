@@ -29,13 +29,13 @@
                 android:padding="16dp">
 
                 <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/errorField"
+                    android:id="@+id/titleField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:text="@string/app_name"
+                    android:textAppearance="?attr/textAppearanceHeadline4"
                     android:textIsSelectable="true"
-                    android:textAppearance="?attr/textAppearanceBody1"
-                    android:textColor="?attr/colorError"
-                    android:visibility="gone" />
+                    android:visibility="visible" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/logField"

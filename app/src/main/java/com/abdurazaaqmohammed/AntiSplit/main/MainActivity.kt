@@ -137,12 +137,11 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 		val copyButton = findViewById<View>(R.id.copyButton)
 		copyButton.visibility = View.VISIBLE
-		copyButton.setOnClickListener { v: View? ->
+		copyButton.setOnClickListener {
 			copyText(
 				StringBuilder().append(
 					logField!!.text
-				).append('\n')
-					.append((findViewById<View>(R.id.errorField) as TextView).text)
+				)
 			)
 		}
 		val coroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
