@@ -202,6 +202,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	) {
 		runOnUiThread {
 			val builder = MaterialAlertDialogBuilder(this)
+			builder.setCancelable(false)
 			builder.setMessage(text)
 			builder.setPositiveButton(
 				positiveButtonText
@@ -329,6 +330,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 						styleAlertDialog(
 							MaterialAlertDialogBuilder(this)
 								.setTitle(mainErr)
+								.setCancelable(false)
 								.setView(dialogView)
 								.setPositiveButton(
 									this.getString(R.string.copy_log)
