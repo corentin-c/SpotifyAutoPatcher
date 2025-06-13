@@ -7,6 +7,7 @@ import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
 import app.revanced.patcher.patch.loadPatchesFromDex
+import com.abdurazaaqmohammed.AntiSplit.main.PACKAGE_TO_PATCH
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.reandroid.apkeditor.merge.Merger.LogListener
@@ -25,9 +26,9 @@ object ReVancedPatcher {
 			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = context.codeCacheDir)
 		logListener.onLog("Filtering patches...")
 		val spotifyPatches = patches.filter { patch ->
-			patch.compatiblePackages?.any { it.first == "com.spotify.music" } ?: false
+			patch.compatiblePackages?.any { it.first == PACKAGE_TO_PATCH } ?: false
 		}
-		val unpatchedApkFile = File(context.cacheDir, "spotify.apk")
+		val unpatchedApkFile = File(context.cacheDir, "unpatched.apk")
 		unpatchedApkFile.copyUriToFile(context, apk)
 		logListener.onLog("${spotifyPatches.size} patches to apply")
 		var numberOfPatchesExecuted = 0
@@ -75,14 +76,6 @@ object ReVancedPatcher {
 		)
 		logListener.onLog("APK signing succeeded !")
 		return signedPatchedApk
-	}
-
-	private fun File.copyRawResourceToFile(context: Context, rawResId: Int) {
-		context.resources.openRawResource(rawResId).use { inputStream ->
-			FileOutputStream(this).use { outputStream ->
-				inputStream.copyTo(outputStream)
-			}
-		}
 	}
 
 	private fun File.copyUriToFile(context: Context, uri: Uri) {

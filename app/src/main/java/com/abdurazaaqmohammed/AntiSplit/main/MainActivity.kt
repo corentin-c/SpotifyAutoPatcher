@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.PackageManager.NameNotFoundException
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
@@ -16,7 +17,6 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
-import android.provider.Settings
 import android.support.v4.content.FileProvider
 import android.util.Log
 import android.util.TypedValue
@@ -46,6 +46,8 @@ import java.io.File
 import java.nio.channels.ClosedByInterruptException
 import java.util.Objects
 
+const val PACKAGE_TO_PATCH = "com.spotify.music"
+
 class MainActivity : AppCompatActivity(), LogListener {
 	private var pkgName: String? = null
 
@@ -64,8 +66,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 			getString(R.string.before_start_message),
 			positiveButtonText = "Start",
 			positiveButtonAction = {
-				pkgName = "com.spotify.music"
-				val file = File(applicationContext.cacheDir.path + "spotify.apk")
+				pkgName = PACKAGE_TO_PATCH
+				val file = File(applicationContext.cacheDir.path + "unpatched.apk")
 				val uri = Uri.fromFile(file)
 				signedApk = uri
 				process(uri)
@@ -93,25 +95,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		runOnUiThread { ad.show() }
 	}
 
-	private fun checkStoragePerm() {
-		if (doesNotHaveStoragePerm(this)) {
-			Toast.makeText(
-				this,
-				this.getString(R.string.grant_storage), Toast.LENGTH_LONG
-			).show()
-			if (LegacyUtils.supportsWriteExternalStorage) requestPermissions(
-				arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-				0
-			)
-			else startActivityForResult(
-				Intent(
-					Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-					"package:$packageName".toUri()
-				), 0
-			)
-		}
-	}
-
 	private var logField: TextView? = null
 	private var scrollView: NestedScrollView? = null
 
@@ -137,13 +120,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 	override fun onDestroy() {
 		deleteDir(cacheDir)
 		super.onDestroy()
-	}
-
-	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-		super.onActivityResult(requestCode, resultCode, data)
-		if (resultCode == RESULT_OK && data != null && requestCode == 0) {
-			checkStoragePerm()
-		}
 	}
 
 	private fun process(outputUri: Uri) {
@@ -305,7 +281,15 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private fun showError(e: Throwable) {
-		if (e !is ClosedByInterruptException) {
+		if (e is NameNotFoundException) {
+			showAlertDialog(
+				getString(R.string.app_not_found_error),
+				positiveButtonText = "Retry",
+				positiveButtonAction = {
+					cancel()
+				},
+			)
+		} else if (e !is ClosedByInterruptException) {
 			val mainErr = e.toString()
 			errorOccurred = mainErr != this.getString(R.string.sign_failed)
 
@@ -385,10 +369,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 			) == PackageManager.PERMISSION_DENIED else !Environment.isExternalStorageManager())
 		}
 
-
-		/**
-		 * @noinspection ResultOfMethodCallIgnored, DataFlowIssue
-		 */
 		fun deleteDir(dir: File) {
 			// There should never be folders in here.
 			for (child in dir.list()!!) File(dir, child).delete()
