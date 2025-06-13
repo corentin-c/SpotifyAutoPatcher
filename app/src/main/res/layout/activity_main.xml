@@ -3,60 +3,18 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:card_view="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="?android:attr/windowBackground"
     android:id="@+id/main"
-    tools:context=".main.MainActivity">
+    tools:context="com.abdurazaaqmohammed.AntiSplit.main.MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:layout_marginTop="50dp">
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:outlineSpotShadowColor="@android:color/transparent"
-            card_view:cardElevation="0dp"
-            app:cardElevation="0dp"
-            android:layout_marginBottom="16dp">
-
-            <LinearLayout
-                android:id="@+id/processButtons"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/decodeButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/merge"
-                    android:layout_marginBottom="8dp"
-                    style="@style/Widget.Material3.Button" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/fromAppsButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/select_from_installed_apps"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
-
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/progressIndicator"
-                    android:layout_marginTop="5dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:indeterminate="true"
-                    android:visibility="gone" />
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
 
         <androidx.core.widget.NestedScrollView
             android:id="@+id/scrollView"
@@ -132,15 +90,6 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:layout_marginBottom="5dp"
             android:visibility="gone" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/settingsButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:elevation="0dp"
-            app:elevation="0dp"
-            android:contentDescription="@string/settings"
-            android:src="@drawable/settings" />
 
     </LinearLayout>
 

@@ -217,15 +217,12 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 	private fun showSuccess() {
 		onLog("Merging APK succeeded !")
-		findViewById<View>(R.id.cancelButton).visibility =
-			View.GONE
 
 		val installButton = findViewById<View>(R.id.installButton)
 		if (errorOccurred) installButton.visibility = View.GONE
 		else {
 			val success = this.getString(R.string.success_saved)
 			LogUtil.logMessage(success)
-			runOnUiThread { Toast.makeText(this, success, Toast.LENGTH_SHORT).show() }
 			if (signedApk != null) {
 				lifecycleScope.launch(Dispatchers.Default) {
 					val patchedApk = patch(
@@ -241,7 +238,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 									.setData(
 										FileProvider.getUriForFile(
 											applicationContext,
-											"com.abdurazaaqmohammed.AntiSplit.provider",
+											"com.github.corentinc.SpotifyAutoPatcher.provider",
 											patchedApk
 										)
 									)
@@ -249,6 +246,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 						}
 						installButton.visibility = View.VISIBLE
 						onLog("Ready to install APK !")
+						findViewById<View>(R.id.cancelButton).visibility =
+							View.GONE
 					}
 				}
 			} else installButton.visibility = View.GONE
