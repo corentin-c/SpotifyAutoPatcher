@@ -53,7 +53,6 @@ import java.util.Objects
 const val PACKAGE_TO_PATCH = "com.spotify.music"
 
 class MainActivity : AppCompatActivity(), LogListener {
-	private var pkgName: String? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -70,7 +69,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 			getString(R.string.before_start_message),
 			positiveButtonText = getString(R.string.start),
 			positiveButtonAction = {
-				pkgName = PACKAGE_TO_PATCH
 				val file = File(applicationContext.cacheDir.path + "unpatched.apk")
 				val uri = Uri.fromFile(file)
 				signedApk = uri
@@ -171,7 +169,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 				bundle.loadApkDirectory(
 					File(
 						this@MainActivity.packageManager.getPackageInfo(
-							pkgName!!, 0
+							PACKAGE_TO_PATCH, 0
 						).applicationInfo!!.sourceDir
 					).parentFile, false, this@MainActivity
 				)
@@ -199,6 +197,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 		text: String,
 		positiveButtonText: String,
 		positiveButtonAction: () -> Unit,
+		neutralButtonText: String? = null,
+		neutralButtonAction: (() -> Unit)? = null,
 	) {
 		runOnUiThread {
 			val builder = MaterialAlertDialogBuilder(this)
@@ -210,9 +210,33 @@ class MainActivity : AppCompatActivity(), LogListener {
 				positiveButtonAction()
 				dialog.dismiss()
 			}
-
+			neutralButtonText?.let {
+				neutralButtonAction?.let {
+					builder.setNeutralButton(
+						neutralButtonText
+					) { dialog: DialogInterface, _: Int ->
+						neutralButtonAction()
+						dialog.dismiss()
+					}
+				}
+			}
 			styleAlertDialog(builder.create())
 		}
+	}
+
+	private fun launchApp(patchedApk: File) {
+		startActivity(
+			Intent(Intent.ACTION_INSTALL_PACKAGE)
+				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+				.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+				.setData(
+					FileProvider.getUriForFile(
+						applicationContext,
+						"com.github.corentinc.SpotifyAutoPatcher.provider",
+						patchedApk
+					)
+				)
+		)
 	}
 
 	private suspend fun showSuccess() {
@@ -230,21 +254,27 @@ class MainActivity : AppCompatActivity(), LogListener {
 				)
 				runOnUiThread {
 					installButton.setOnClickListener {
-						startActivity(
-							Intent(Intent.ACTION_INSTALL_PACKAGE)
-								.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-								.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-								.setData(
-									FileProvider.getUriForFile(
-										applicationContext,
-										"com.github.corentinc.SpotifyAutoPatcher.provider",
-										patchedApk
-									)
-								)
-						)
+						try {
+							this@MainActivity.packageManager.getPackageInfo(
+								PACKAGE_TO_PATCH, 0
+							).applicationInfo!!.sourceDir
+							showAlertDialog(
+								getString(R.string.spotify_detected_before_install),
+								positiveButtonText = getString(R.string.ok),
+								positiveButtonAction = {
+									// empty
+								},
+								neutralButtonText = getString(R.string.install_anyway_not_recommended),
+								neutralButtonAction = {
+									launchApp(patchedApk)
+								}
+							)
+						} catch (exception: NameNotFoundException) {
+							launchApp(patchedApk)
+						}
 					}
 					installButton.visibility = View.VISIBLE
-					onLog("Ready to install APK ! Uninstall existing package first before clicking on install")
+					onLog(getString(R.string.ready_to_install),)
 					findViewById<View>(R.id.cancelButton).visibility =
 						View.GONE
 					showAlertDialog(

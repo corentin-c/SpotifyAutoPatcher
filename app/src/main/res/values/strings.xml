@@ -87,9 +87,11 @@
     <string name="pairip_warning">The app you are trying to merge uses Pairip/Google加固 Integrity to protect it from modification. The merged version will crash on opening unless you know how to modify the APK to bypass it.</string>
     <string name="before_start_message">Make sure the UNPATCHED Spotify app is installed from the Google play store, before clicking on Start</string>
     <string name="app_not_found_error">Couldn\'t find the Spotify app on your phone, make sure the UNPATCHED Spotify app is installed from the Google play store and not disabled on your phone</string>
-    <string name="ready_to_install">"Ready to install your patched version of Spotify ! Uninstall the Spotify app from your phone before clicking install button "</string>
+    <string name="ready_to_install">Ready to install your patched version of Spotify ! Uninstall the Spotify app from your phone before clicking install button</string>
+    <string name="spotify_detected_before_install">The Spotify app was still detected on your phone. Please uninstall it before installing the patched one.</string>
     <string name="network_unavailable_error">Network connection unavailable. Please make sure you have a stable internet connection and try again</string>
     <string name="retry">Retry</string>
     <string name="start">Start</string>
     <string name="ok">Ok</string>
+    <string name="install_anyway_not_recommended">Install anyway (not recommended)</string>
 </resources>
