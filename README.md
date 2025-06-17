@@ -22,7 +22,7 @@ Whats it does :
 - Retrieve and download the latest ReVanced Patches
 - Apply all existing patches for Spotify
 - Rebuild the APK
-- Allow you to uninstall the store version before installing the patched on
+- Allow you to uninstall the store version before installing the patched one
 
 But this app :
 - Cannot patch anything else than Spotify
