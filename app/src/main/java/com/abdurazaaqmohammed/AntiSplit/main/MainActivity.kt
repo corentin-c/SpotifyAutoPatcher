@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		super.onCreate(savedInstanceState)
 		handler = Handler(Looper.getMainLooper())
 		deleteDir(cacheDir)
+		deleteDir(codeCacheDir)
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		setContentView(R.layout.activity_main)
 		scrollView = findViewById(R.id.scrollView)
