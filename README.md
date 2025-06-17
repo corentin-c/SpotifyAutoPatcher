@@ -12,8 +12,8 @@ Android app to patch Spotify combining the powers of AntiSplit-M and ReVanced Ma
 - Launch Spotify Auto Patcher
 - Click on "Start"
 - Wait for the processing to finish
-- Uninstall the Spotify version of the play store
-- Go back to the app and click on the "Install" button (down arrow)
+- Click ok when asked to uninstall the existing store version of Spotify
+- Click ok to install the patched version
 - Make sure to disable auto updates from the Google play store
 - Enjoy !
 
@@ -22,7 +22,7 @@ Whats it does :
 - Retrieve and download the latest ReVanced Patches
 - Apply all existing patches for Spotify
 - Rebuild the APK
-- Allow you to install the APK after you uninstalled the store version
+- Allow you to uninstall the store version before installing the patched on
 
 But this app :
 - Cannot patch anything else than Spotify
@@ -30,7 +30,6 @@ But this app :
 - Cannot patch a version of Spotify installed from an APK
 - Doesn't allow you to choose which patches are applied
 - Doesn't allow you to save the patched APK
-- Cannot uninstall Spotify before you install the patched version, you have to do it manually
 
 ## Used projects
 
