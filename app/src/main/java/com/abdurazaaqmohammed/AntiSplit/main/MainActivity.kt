@@ -225,7 +225,28 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
-	private fun launchApp(patchedApk: File) {
+	private fun installAppOrShowPopUpIfAlreadyInstalled(patchedApk: File) {
+		try {
+			this@MainActivity.packageManager.getPackageInfo(
+				PACKAGE_TO_PATCH, 0
+			).applicationInfo!!.sourceDir
+			showAlertDialog(
+				getString(R.string.spotify_detected_before_install),
+				positiveButtonText = getString(R.string.ok),
+				positiveButtonAction = {
+					// empty
+				},
+				neutralButtonText = getString(R.string.install_anyway_not_recommended),
+				neutralButtonAction = {
+					installApp(patchedApk)
+				}
+			)
+		} catch (exception: NameNotFoundException) {
+			installApp(patchedApk)
+		}
+	}
+
+	private fun installApp(patchedApk: File) {
 		startActivity(
 			Intent(Intent.ACTION_INSTALL_PACKAGE)
 				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -242,7 +263,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 	private val uninstallCallback =
 		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-			launchApp(patchedApk)
+			installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
 		}
 
 	private fun uninstallApp() {
@@ -270,24 +291,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 				)
 				runOnUiThread {
 					installButton.setOnClickListener {
-						try {
-							this@MainActivity.packageManager.getPackageInfo(
-								PACKAGE_TO_PATCH, 0
-							).applicationInfo!!.sourceDir
-							showAlertDialog(
-								getString(R.string.spotify_detected_before_install),
-								positiveButtonText = getString(R.string.ok),
-								positiveButtonAction = {
-									// empty
-								},
-								neutralButtonText = getString(R.string.install_anyway_not_recommended),
-								neutralButtonAction = {
-									launchApp(patchedApk)
-								}
-							)
-						} catch (exception: NameNotFoundException) {
-							launchApp(patchedApk)
-						}
+						installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
 					}
 					installButton.visibility = View.VISIBLE
 					onLog(getString(R.string.ready_to_install))
