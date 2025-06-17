@@ -28,6 +28,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
@@ -57,7 +58,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		handler = Handler(Looper.getMainLooper())
-
 		deleteDir(cacheDir)
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		setContentView(R.layout.activity_main)
@@ -239,6 +239,21 @@ class MainActivity : AppCompatActivity(), LogListener {
 		)
 	}
 
+	private val uninstallCallback =
+		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+			launchApp(patchedApk)
+		}
+
+	private fun uninstallApp() {
+		val uri = "package:$PACKAGE_TO_PATCH".toUri()
+		uninstallCallback.launch(
+			Intent(Intent.ACTION_UNINSTALL_PACKAGE, uri)
+				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+				.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+		)
+	}
+
+	private lateinit var patchedApk: File
 	private suspend fun showSuccess() {
 		onLog("Merging APK succeeded !")
 
@@ -248,7 +263,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 			val success = this.getString(R.string.success_saved)
 			LogUtil.logMessage(success)
 			if (signedApk != null) {
-				val patchedApk = patch(
+				patchedApk = patch(
 					applicationContext, signedApk,
 					this@MainActivity
 				)
@@ -274,14 +289,14 @@ class MainActivity : AppCompatActivity(), LogListener {
 						}
 					}
 					installButton.visibility = View.VISIBLE
-					onLog(getString(R.string.ready_to_install),)
+					onLog(getString(R.string.ready_to_install))
 					findViewById<View>(R.id.cancelButton).visibility =
 						View.GONE
 					showAlertDialog(
 						getString(R.string.ready_to_install),
-						positiveButtonText = getString(R.string.ok),
+						positiveButtonText = getString(R.string.next),
 						positiveButtonAction = {
-							// empty
+							uninstallApp()
 						},
 					)
 
