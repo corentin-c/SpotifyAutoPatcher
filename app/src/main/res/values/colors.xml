@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
+    <!-- Primary Color: "Classic" Spotify Green -->
+    <color name="colorPrimary">#FF1DB954</color>
+    <!-- Color Accent: "Classic" Spotify Green (20% darker)  -->
+    <color name="colorAccent">#FF179443</color>
+    <!-- A nice shade of dark black -->
+    <color name="black">#FF10101C</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorAccent">#3F51B5</color>
-    <color name="textColorPrimary">#FFFFFF</color>
-    <color name="textColorSecondary">#FFFFFF</color>
+    <color name="textColorPrimary">#FFFFFFFF</color>
+    <color name="textColorSecondary">#FFFFFFFF</color>
     <color name="colorHeader">@color/colorPrimary</color>
 </resources>
