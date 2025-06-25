@@ -75,10 +75,25 @@
             android:layout_height="wrap_content"
             android:elevation="0dp"
             app:elevation="0dp"
+            android:tooltipText="@string/app_name"
             android:contentDescription="@string/install"
-            android:src="@android:drawable/stat_sys_download"
+            android:src="@android:drawable/ic_menu_upload"
             android:layout_marginBottom="5dp"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:visibility="visible"
+            />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/downloadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:elevation="0dp"
+            app:elevation="0dp"
+            android:src="@android:drawable/ic_menu_save"
+            android:layout_marginBottom="5dp"
+            android:visibility="gone"
+            tools:visibility="visible"
+            />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/cancelButton"
@@ -89,7 +104,9 @@
             android:contentDescription="@string/cancel"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:layout_marginBottom="5dp"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:visibility="visible"
+            />
 
     </LinearLayout>
 
