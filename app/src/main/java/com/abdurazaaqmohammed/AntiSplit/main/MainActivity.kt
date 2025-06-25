@@ -36,6 +36,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.ReVancedPatcher.patch
+import com.corentinc.patcher.isNetworkException
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.reandroid.apk.ApkBundle
@@ -47,7 +48,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.net.UnknownHostException
 import java.nio.channels.ClosedByInterruptException
 import java.util.Objects
 
@@ -324,18 +324,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private fun showError(error: Throwable) {
-		when (error) {
-			is NameNotFoundException -> {
-				showAlertDialog(
-					getString(R.string.app_not_found_error),
-					positiveButtonText = getString(R.string.retry),
-					positiveButtonAction = {
-						cancel()
-					},
-				)
-			}
-
-			is UnknownHostException -> {
+		when {
+			error.isNetworkException() -> {
 				showAlertDialog(
 					getString(R.string.network_unavailable_error),
 					positiveButtonText = getString(R.string.retry),
@@ -345,7 +335,17 @@ class MainActivity : AppCompatActivity(), LogListener {
 				)
 			}
 
-			!is ClosedByInterruptException -> {
+			error is NameNotFoundException -> {
+				showAlertDialog(
+					getString(R.string.app_not_found_error),
+					positiveButtonText = getString(R.string.retry),
+					positiveButtonAction = {
+						cancel()
+					},
+				)
+			}
+
+			error !is ClosedByInterruptException -> {
 				val mainErr = error.toString()
 				errorOccurred = mainErr != this.getString(R.string.sign_failed)
 
