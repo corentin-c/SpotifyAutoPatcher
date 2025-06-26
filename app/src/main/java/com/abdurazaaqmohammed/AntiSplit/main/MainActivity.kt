@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 				// don't know why I can't reuse the same file but it doesn't work otherwise
 				val apk = File(cacheDir, "unpatched.apk")
 				apk.copyUriToFile(this@MainActivity, uri)
-				showSuccess(apk)
+				startPatching(apk)
 			} catch (exception: Exception) {
 				showError(exception)
 			}
@@ -271,7 +271,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private lateinit var patchedApk: File
-	private suspend fun showSuccess(file: File) {
+	private suspend fun startPatching(file: File) {
 		onLog("Merging APK succeeded !")
 
 		val installButton = findViewById<View>(R.id.installButton)
