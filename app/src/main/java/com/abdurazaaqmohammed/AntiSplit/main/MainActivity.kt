@@ -174,7 +174,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 						).applicationInfo!!.sourceDir
 					).parentFile, false, this@MainActivity
 				)
-				Merger.run(bundle, cacheDir, outputUri, this@MainActivity, false)
+				Merger.run(bundle, cacheDir, outputUri, this@MainActivity)
 				this@MainActivity.showSuccess()
 			} catch (exception: Exception) {
 				this@MainActivity.showError(exception)
@@ -419,7 +419,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 	companion object {
 		var errorOccurred: Boolean = false
 		var lang: String? = null
-		var theme: Int = 0
 
 		@JvmStatic
 		fun doesNotHaveStoragePerm(context: Context): Boolean {
