@@ -54,7 +54,7 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("com.google.android.material:material:1.12.0")
     implementation("app.revanced:revanced-patcher:21.1.0-dev.1")
-    implementation("app.revanced:patches:5.27.0-dev.2")
+    implementation("app.revanced:patches:5.29.0")
     implementation("app.revanced:revanced-library-android:3.2.0-dev.1")
     implementation("com.github.topjohnwu.libsu:nio:5.2.2")
     implementation("com.google.code.gson:gson:2.13.1")
