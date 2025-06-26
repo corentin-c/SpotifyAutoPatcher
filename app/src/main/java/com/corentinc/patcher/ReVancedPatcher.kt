@@ -1,7 +1,6 @@
 package com.corentinc.patcher
 
 import android.content.Context
-import android.net.Uri
 import app.revanced.library.ApkUtils
 import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.Patcher
@@ -13,13 +12,12 @@ import com.google.gson.reflect.TypeToken
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import java.io.BufferedReader
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.net.URL
 
 object ReVancedPatcher {
-	suspend fun patch(context: Context, apk: Uri, logListener: LogListener): File {
+	suspend fun patch(context: Context, apk: File, logListener: LogListener): File {
 		logListener.onLog("Getting patches...")
 		val patchesFile = getPatches(context)
 		val patches =
@@ -28,15 +26,13 @@ object ReVancedPatcher {
 		val spotifyPatches = patches.filter { patch ->
 			patch.compatiblePackages?.any { it.first == PACKAGE_TO_PATCH } ?: false
 		}
-		val unpatchedApkFile = File(context.cacheDir, "unpatched.apk")
-		unpatchedApkFile.copyUriToFile(context, apk)
 		logListener.onLog("${spotifyPatches.size} patches to apply")
 		var numberOfPatchesExecuted = 0
 		logListener.onLog("Applying patches...")
 		val patcherResult =
 			Patcher(
 				PatcherConfig(
-					apkFile = unpatchedApkFile,
+					apkFile = apk,
 					aaptBinaryPath = Aapt.binary(context).absolutePath,
 					temporaryFilesPath = context.filesDir,
 					frameworkFileDirectory = context.filesDir.path
@@ -59,12 +55,12 @@ object ReVancedPatcher {
 			}
 		logListener.onLog("Patching succeeded !")
 		logListener.onLog("Creating APK...")
-		patcherResult.applyTo(unpatchedApkFile)
+		patcherResult.applyTo(apk)
 		logListener.onLog("APK creation succeeded !")
 		val signedPatchedApk = File(context.filesDir, "signedPatched.apk")
 		logListener.onLog("Signing APK...")
 		ApkUtils.signApk(
-			unpatchedApkFile,
+			apk,
 			signedPatchedApk,
 			"autoSpotify",
 			ApkUtils.KeyStoreDetails(
@@ -76,22 +72,6 @@ object ReVancedPatcher {
 		)
 		logListener.onLog("APK signing succeeded !")
 		return signedPatchedApk
-	}
-
-	private fun File.copyUriToFile(context: Context, uri: Uri) {
-		context.contentResolver.openInputStream(uri).use { inputStream ->
-			FileOutputStream(this).use { outputStream ->
-				inputStream?.copyTo(outputStream) ?: throw Exception("Couldn't copy apk")
-			}
-		}
-	}
-
-	private fun File.fromInputStream(inputStream: InputStream) {
-		inputStream.use { stream ->
-			FileOutputStream(this).use { outputStream ->
-				stream.copyTo(outputStream)
-			}
-		}
 	}
 
 	private fun readInputStream(inputStream: InputStream): String {

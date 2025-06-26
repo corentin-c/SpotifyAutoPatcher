@@ -36,6 +36,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.ReVancedPatcher.patch
+import com.corentinc.patcher.copyUriToFile
 import com.corentinc.patcher.isNetworkException
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -43,7 +44,6 @@ import com.reandroid.apk.ApkBundle
 import com.reandroid.apkeditor.merge.LogUtil
 import com.reandroid.apkeditor.merge.Merger
 import com.reandroid.apkeditor.merge.Merger.LogListener
-import com.reandroid.apkeditor.merge.Merger.signedApk
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,6 +60,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		handler = Handler(Looper.getMainLooper())
 		deleteDir(cacheDir)
 		deleteDir(codeCacheDir)
+		deleteDir(filesDir)
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		setContentView(R.layout.activity_main)
 		scrollView = findViewById(R.id.scrollView)
@@ -70,10 +71,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 			getString(R.string.before_start_message),
 			positiveButtonText = getString(R.string.start),
 			positiveButtonAction = {
-				val file = File(applicationContext.cacheDir.path + "unpatched.apk")
-				val uri = Uri.fromFile(file)
-				signedApk = uri
-				process(uri)
+				process()
 			},
 		)
 
@@ -133,12 +131,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	var handler: Handler? = null
 		private set
 
-	override fun onDestroy() {
-		deleteDir(cacheDir)
-		super.onDestroy()
-	}
-
-	private fun process(outputUri: Uri) {
+	private fun process() {
 		onLog("Merging APK...")
 		findViewById<View>(R.id.installButton).visibility =
 			View.GONE
@@ -146,7 +139,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		fabs.alpha = 0.5f
 		val cancelButton = findViewById<View>(R.id.cancelButton)
 		cancelButton.visibility = View.VISIBLE
-		cancelButton.setOnClickListener { v: View? ->
+		cancelButton.setOnClickListener {
 			cancel()
 		}
 
@@ -160,24 +153,26 @@ class MainActivity : AppCompatActivity(), LogListener {
 			)
 		}
 		val coroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
-			this@MainActivity.showError(e)
+			showError(e)
 		}
 		lifecycleScope.launch(Dispatchers.Default + coroutineExceptionHandler) {
 			try {
-				val cacheDir = this@MainActivity.cacheDir
-				deleteDir(cacheDir)
 				val bundle = ApkBundle()
 				bundle.loadApkDirectory(
 					File(
-						this@MainActivity.packageManager.getPackageInfo(
+						packageManager.getPackageInfo(
 							PACKAGE_TO_PATCH, 0
 						).applicationInfo!!.sourceDir
 					).parentFile, false, this@MainActivity
 				)
-				Merger.run(bundle, cacheDir, outputUri, this@MainActivity)
-				this@MainActivity.showSuccess()
+				val uri = File(cacheDir, "temp.apk").toUri()
+				Merger.run(bundle, cacheDir, uri, this@MainActivity)
+				// don't know why I can't reuse the same file but it doesn't work otherwise
+				val apk = File(cacheDir, "unpatched.apk")
+				apk.copyUriToFile(this@MainActivity, uri)
+				showSuccess(apk)
 			} catch (exception: Exception) {
-				this@MainActivity.showError(exception)
+				showError(exception)
 			}
 		}
 	}
@@ -276,7 +271,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private lateinit var patchedApk: File
-	private suspend fun showSuccess() {
+	private suspend fun showSuccess(file: File) {
 		onLog("Merging APK succeeded !")
 
 		val installButton = findViewById<View>(R.id.installButton)
@@ -284,9 +279,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 		else {
 			val success = this.getString(R.string.success_saved)
 			LogUtil.logMessage(success)
-			if (signedApk != null) {
 				patchedApk = patch(
-					applicationContext, signedApk,
+					applicationContext, file,
 					this@MainActivity
 				)
 				runOnUiThread {
@@ -306,7 +300,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 					)
 
 				}
-			} else installButton.visibility = View.GONE
 		}
 	}
 

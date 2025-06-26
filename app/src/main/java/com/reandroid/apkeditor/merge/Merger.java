@@ -171,6 +171,4 @@ public class Merger {
         }
     }
 
-    public static Uri signedApk;
-
 }
