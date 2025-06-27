@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -18,6 +20,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.support.v4.content.FileProvider
 import android.util.Log
@@ -49,7 +52,9 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.OutputStream
 import java.nio.channels.ClosedByInterruptException
+import java.util.Calendar
 import java.util.Objects
 import java.util.zip.ZipException
 import kotlin.io.path.createDirectory
@@ -62,7 +67,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		defaultFolder = File(cacheDir, "SpotifyAutoPatcher")
-		if(!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
+		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())
 		clearDirectory(defaultFolder)
 		WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -173,6 +178,60 @@ class MainActivity : AppCompatActivity(), LogListener {
 				Merger.run(bundle, defaultFolder, uri, this@MainActivity)
 				val apk = File(defaultFolder, "unpatched.apk")
 				apk.copyUriToFile(this@MainActivity, uri)
+
+				runOnUiThread {
+					val downloadButton = findViewById<View>(R.id.downloadButton)
+					downloadButton.setOnClickListener {
+						// Android 10 and above
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+							val context = applicationContext
+							val contentResolver: ContentResolver = context.contentResolver
+							val contentValues = ContentValues()
+							contentValues.put(
+								MediaStore.Downloads.DISPLAY_NAME,
+								"Spotify-SpotifyAutoPatcher-" + Calendar.getInstance().timeInMillis + ".apk"
+							)
+							contentValues.put(
+								MediaStore.Downloads.MIME_TYPE,
+								"application/vnd.android.package-archive"
+							)
+							contentValues.put(
+								MediaStore.Downloads.RELATIVE_PATH,
+								Environment.DIRECTORY_DOWNLOADS
+							)
+
+							val contentUri =
+								MediaStore.Downloads.EXTERNAL_CONTENT_URI
+							val itemUri: Uri? = contentResolver.insert(contentUri, contentValues)!!
+
+							val outputStream: OutputStream =
+								contentResolver.openOutputStream(itemUri!!)!!
+							apk.inputStream().use { stream ->
+								stream.copyTo(outputStream)
+							}
+						} else {
+							// TODO: Android 9 and below
+							val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
+								Environment.DIRECTORY_DOWNLOADS
+							)
+
+							if (!downloadsDirectory.exists()) {
+								downloadsDirectory.mkdirs()
+							}
+							val savedFile = File(
+								downloadsDirectory,
+								"Spotify-SpotifyAutoPatcher-" + Calendar.getInstance().timeInMillis + ".apk"
+							)
+							apk.inputStream().use { stream ->
+								savedFile.outputStream().use { outputStream ->
+									stream.copyTo(outputStream)
+								}
+							}
+						}
+					}
+					downloadButton.visibility = View.VISIBLE
+				}
+
 				startPatching(apk)
 			} catch (exception: Exception) {
 				showError(exception)
