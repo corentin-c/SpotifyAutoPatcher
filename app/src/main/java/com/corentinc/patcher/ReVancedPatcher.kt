@@ -17,11 +17,11 @@ import java.io.InputStreamReader
 import java.net.URL
 
 object ReVancedPatcher {
-	suspend fun patch(context: Context, apk: File, logListener: LogListener): File {
+	suspend fun patch(context: Context, apk: File, tmpDirectory: File, logListener: LogListener): File {
 		logListener.onLog("Getting patches...")
-		val patchesFile = getPatches(context)
+		val patchesFile = getPatches(tmpDirectory)
 		val patches =
-			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = context.codeCacheDir)
+			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = tmpDirectory)
 		logListener.onLog("Filtering patches...")
 		val spotifyPatches = patches.filter { patch ->
 			patch.compatiblePackages?.any { it.first == PACKAGE_TO_PATCH } ?: false
@@ -34,8 +34,8 @@ object ReVancedPatcher {
 				PatcherConfig(
 					apkFile = apk,
 					aaptBinaryPath = Aapt.binary(context).absolutePath,
-					temporaryFilesPath = context.filesDir,
-					frameworkFileDirectory = context.filesDir.path
+					temporaryFilesPath = File(tmpDirectory, "temporaryFiles"),
+					frameworkFileDirectory = tmpDirectory.path
 				)
 			).use { patcher ->
 				patcher += spotifyPatches.toSet()
@@ -57,14 +57,14 @@ object ReVancedPatcher {
 		logListener.onLog("Creating APK...")
 		patcherResult.applyTo(apk)
 		logListener.onLog("APK creation succeeded !")
-		val signedPatchedApk = File(context.filesDir, "signedPatched.apk")
+		val signedPatchedApk = File(tmpDirectory, "signedPatched.apk")
 		logListener.onLog("Signing APK...")
 		ApkUtils.signApk(
 			apk,
 			signedPatchedApk,
 			"autoSpotify",
 			ApkUtils.KeyStoreDetails(
-				File(context.cacheDir, "autoSpotify.keystore"),
+				File(tmpDirectory, "autoSpotify.keystore"),
 				"autoSpotify.keystore.password",
 				"autoSpotify.key.alias",
 				"autoSpotify.key.password"
@@ -84,7 +84,7 @@ object ReVancedPatcher {
 		return totalString
 	}
 
-	private fun getPatches(context: Context): File {
+	private fun getPatches(tmpDirectory: File): File {
 		val patchesInfoURL = URL("https://api.revanced.app/v4/patches")
 		val urlConnection = patchesInfoURL.openConnection()
 		urlConnection.connectTimeout = 4000
@@ -96,7 +96,7 @@ object ReVancedPatcher {
 		val patchesUrl = URL(patchesInfo.download_url)
 		val patchesUrlConnection = patchesUrl.openConnection()
 		patchesUrlConnection.connectTimeout = 4000
-		val patchesFile = File(context.cacheDir, "patches.rvp")
+		val patchesFile = File(tmpDirectory, "patches.rvp")
 		patchesFile.fromInputStream(patchesUrlConnection.getInputStream())
 		return patchesFile
 	}

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <files-path
-        name="internal"
-        path="."/>
+    <files-path name="internal" path="."/>
     <external-path name="external_files" path="."/>
     <external-path path="Android/data/${applicationId}/" name="files_root" />
+    <cache-path name="cache" path="." />
 
 </paths>
