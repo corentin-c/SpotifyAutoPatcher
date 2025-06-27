@@ -55,9 +55,9 @@ public class Merger {
         void onLog(int resID);
     }
 
-    public static void run(ApkBundle bundle, File cacheDir, Uri out, Context context) throws IOException, InterruptedException {
+    public static void run(ApkBundle bundle, File dir, Uri out, Context context) throws IOException, InterruptedException {
         logMessage("Found modules: " + bundle.getApkModuleList().size());
-        for (File split : cacheDir.listFiles()) {
+        for (File split : dir.listFiles()) {
             String splitName = split.getName();
             String arch = null;
             String var = "x86";

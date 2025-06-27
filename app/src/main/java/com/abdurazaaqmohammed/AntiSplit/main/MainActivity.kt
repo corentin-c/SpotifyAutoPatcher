@@ -1,6 +1,7 @@
 package com.abdurazaaqmohammed.AntiSplit.main
 
 import android.Manifest
+import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -50,17 +51,20 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.channels.ClosedByInterruptException
 import java.util.Objects
+import java.util.zip.ZipException
+import kotlin.io.path.createDirectory
 
 const val PACKAGE_TO_PATCH = "com.spotify.music"
 
 class MainActivity : AppCompatActivity(), LogListener {
+	private lateinit var defaultFolder: File
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		defaultFolder = File(cacheDir, "SpotifyAutoPatcher")
+		if(!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())
-		deleteDir(cacheDir)
-		deleteDir(codeCacheDir)
-		deleteDir(filesDir)
+		clearDirectory(defaultFolder)
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		setContentView(R.layout.activity_main)
 		scrollView = findViewById(R.id.scrollView)
@@ -165,10 +169,9 @@ class MainActivity : AppCompatActivity(), LogListener {
 						).applicationInfo!!.sourceDir
 					).parentFile, false, this@MainActivity
 				)
-				val uri = File(cacheDir, "temp.apk").toUri()
-				Merger.run(bundle, cacheDir, uri, this@MainActivity)
-				// don't know why I can't reuse the same file but it doesn't work otherwise
-				val apk = File(cacheDir, "unpatched.apk")
+				val uri = File(defaultFolder, "mergingResult.apk").toUri()
+				Merger.run(bundle, defaultFolder, uri, this@MainActivity)
+				val apk = File(defaultFolder, "unpatched.apk")
 				apk.copyUriToFile(this@MainActivity, uri)
 				startPatching(apk)
 			} catch (exception: Exception) {
@@ -279,27 +282,27 @@ class MainActivity : AppCompatActivity(), LogListener {
 		else {
 			val success = this.getString(R.string.success_saved)
 			LogUtil.logMessage(success)
-				patchedApk = patch(
-					applicationContext, file,
-					this@MainActivity
-				)
-				runOnUiThread {
-					installButton.setOnClickListener {
-						installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
-					}
-					installButton.visibility = View.VISIBLE
-					onLog(getString(R.string.ready_to_install))
-					findViewById<View>(R.id.cancelButton).visibility =
-						View.GONE
-					showAlertDialog(
-						getString(R.string.ready_to_install),
-						positiveButtonText = getString(R.string.next),
-						positiveButtonAction = {
-							uninstallApp()
-						},
-					)
-
+			patchedApk = patch(
+				applicationContext, file, defaultFolder,
+				this@MainActivity
+			)
+			runOnUiThread {
+				installButton.setOnClickListener {
+					installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
 				}
+				installButton.visibility = View.VISIBLE
+				onLog(getString(R.string.ready_to_install))
+				findViewById<View>(R.id.cancelButton).visibility =
+					View.GONE
+				showAlertDialog(
+					getString(R.string.ready_to_install),
+					positiveButtonText = getString(R.string.next),
+					positiveButtonAction = {
+						uninstallApp()
+					},
+				)
+
+			}
 		}
 	}
 
@@ -338,6 +341,20 @@ class MainActivity : AppCompatActivity(), LogListener {
 				)
 			}
 
+			error is ZipException -> {
+				showAlertDialog(
+					getString(R.string.zip_exception_error),
+					positiveButtonText = getString(R.string.fix),
+					positiveButtonAction = {
+						(getSystemService(ACTIVITY_SERVICE) as ActivityManager).clearApplicationUserData()
+					},
+					neutralButtonText = getString(R.string.retry),
+					neutralButtonAction = {
+						cancel()
+					}
+				)
+			}
+
 			error !is ClosedByInterruptException -> {
 				val mainErr = error.toString()
 				errorOccurred = mainErr != this.getString(R.string.sign_failed)
@@ -348,11 +365,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 				val fullLog = StringBuilder(stackTrace).append('\n')
 					.append("SDK ").append(Build.VERSION.SDK_INT).append('\n')
 					.append(this.getString(R.string.app_name)).append(' ')
-				val currentVer = try {
-					packageManager.getPackageInfo(packageName, 0).versionName
-				} catch (ex: Exception) {
-					"2.1.1"
-				}
+				val currentVer = packageManager.getPackageInfo(packageName, 0).versionName
 				fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
 					.append(
 						!doesNotHaveStoragePerm(
@@ -420,9 +433,10 @@ class MainActivity : AppCompatActivity(), LogListener {
 			) == PackageManager.PERMISSION_DENIED else !Environment.isExternalStorageManager())
 		}
 
-		fun deleteDir(dir: File) {
-			// There should never be folders in here.
-			for (child in dir.list()!!) File(dir, child).delete()
+		fun clearDirectory(dir: File) {
+			dir.listFiles()?.forEach {
+				it.deleteRecursively()
+			}
 		}
 
 		@JvmStatic
