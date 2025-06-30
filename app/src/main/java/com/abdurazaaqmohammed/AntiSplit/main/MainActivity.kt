@@ -35,6 +35,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
@@ -63,8 +64,31 @@ const val PACKAGE_TO_PATCH = "com.spotify.music"
 class MainActivity : AppCompatActivity(), LogListener {
 	private lateinit var defaultFolder: File
 
+	private val requestWritePermissionLauncher = registerForActivityResult(
+		ActivityResultContracts.RequestPermission()
+	) { isGranted: Boolean ->
+		if (!isGranted) {
+			runOnUiThread {
+				showAlertDialog(
+					getString(R.string.storage_permission_denied_warning),
+					positiveButtonText = getString(R.string.ok),
+					positiveButtonAction = {
+						// empty
+					},
+				)
+			}
+		}
+	}
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(
+				this,
+				Manifest.permission.WRITE_EXTERNAL_STORAGE
+			) != PackageManager.PERMISSION_GRANTED
+		) {
+			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+		}
 		defaultFolder = File(cacheDir, "SpotifyAutoPatcher")
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())

@@ -42,4 +42,6 @@ But this app :
 
 * QUERY_ALL_PACKAGES - to extract the APK from the installed Spotify app
 * REQUEST_INSTALL_PACKAGES - to show an install button allowing prompt to install an app after merging it
-* Internet permission - to retrieve the latest revanced patches
+* REQUEST_DELETE_PACKAGES - to show an uninstall button allowing prompt to uninstall an app after merging it
+* INTERNET - to retrieve the latest revanced patches
+* WRITE_EXTERNAL_STORAGE - to retrieve the latest revanced patches

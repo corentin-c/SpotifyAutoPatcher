@@ -99,4 +99,5 @@
     <string name="fix">Fix</string>
     <string name="could_not_save_apk">Could not save apk</string>
     <string name="apk_saved">APK saved in Downloads folder</string>
+    <string name="storage_permission_denied_warning">You will not be able to save the APK without accepting the permission to access external storage</string>
 </resources>
