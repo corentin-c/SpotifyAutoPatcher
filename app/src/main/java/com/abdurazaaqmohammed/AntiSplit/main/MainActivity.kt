@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -18,6 +20,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.support.v4.content.FileProvider
 import android.util.Log
@@ -32,6 +35,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
@@ -50,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.channels.ClosedByInterruptException
+import java.util.Calendar
 import java.util.Objects
 import java.util.zip.ZipException
 import kotlin.io.path.createDirectory
@@ -59,10 +64,33 @@ const val PACKAGE_TO_PATCH = "com.spotify.music"
 class MainActivity : AppCompatActivity(), LogListener {
 	private lateinit var defaultFolder: File
 
+	private val requestWritePermissionLauncher = registerForActivityResult(
+		ActivityResultContracts.RequestPermission()
+	) { isGranted: Boolean ->
+		if (!isGranted) {
+			runOnUiThread {
+				showAlertDialog(
+					getString(R.string.storage_permission_denied_warning),
+					positiveButtonText = getString(R.string.ok),
+					positiveButtonAction = {
+						// empty
+					},
+				)
+			}
+		}
+	}
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(
+				this,
+				Manifest.permission.WRITE_EXTERNAL_STORAGE
+			) != PackageManager.PERMISSION_GRANTED
+		) {
+			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+		}
 		defaultFolder = File(cacheDir, "SpotifyAutoPatcher")
-		if(!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
+		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())
 		clearDirectory(defaultFolder)
 		WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -180,6 +208,91 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
+	private fun saveApk(apk: File) {
+		val apkName =
+			"Spotify(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
+
+		val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
+			Environment.DIRECTORY_DOWNLOADS
+		)
+
+		if (!downloadsDirectory.exists()) {
+			downloadsDirectory.mkdirs()
+		}
+		// Android 10 and above
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+			val context = applicationContext
+			val contentResolver: ContentResolver = context.contentResolver
+			val contentValues = ContentValues()
+			contentValues.put(
+				MediaStore.Downloads.DISPLAY_NAME,
+				apkName
+			)
+			contentValues.put(
+				MediaStore.Downloads.MIME_TYPE,
+				"application/vnd.android.package-archive"
+			)
+			contentValues.put(
+				MediaStore.Downloads.RELATIVE_PATH,
+				Environment.DIRECTORY_DOWNLOADS
+			)
+
+			val contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+			val itemUri: Uri? = contentResolver.insert(contentUri, contentValues)
+			itemUri?.let {
+				contentResolver.openOutputStream(it).use { outputStream ->
+					outputStream?.let {
+						apk.inputStream().use { stream ->
+							stream.copyTo(outputStream)
+						}
+						showAlertDialog(
+							getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
+							positiveButtonText = getString(R.string.ok),
+							positiveButtonAction = {
+								// empty
+							},
+						)
+					} ?: run {
+						showAlertDialog(
+							getString(R.string.could_not_save_apk),
+							positiveButtonText = getString(R.string.ok),
+							positiveButtonAction = {
+								// empty
+							},
+						)
+					}
+				}
+			} ?: run {
+				showAlertDialog(
+					getString(R.string.could_not_save_apk),
+					positiveButtonText = getString(R.string.ok),
+					positiveButtonAction = {
+						// empty
+					},
+				)
+			}
+		} else {
+			// Android 9 and below
+			val savedFile = File(
+				downloadsDirectory,
+				apkName
+			)
+			apk.inputStream().use { stream ->
+				savedFile.outputStream().use { outputStream ->
+					stream.copyTo(outputStream)
+				}
+			}
+
+			showAlertDialog(
+				getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
+				positiveButtonText = getString(R.string.ok),
+				positiveButtonAction = {
+					// empty
+				},
+			)
+		}
+	}
+
 	private fun cancel() {
 		var intent = packageManager.getLaunchIntentForPackage(packageName)
 		if (intent == null) {
@@ -294,6 +407,13 @@ class MainActivity : AppCompatActivity(), LogListener {
 				onLog(getString(R.string.ready_to_install))
 				findViewById<View>(R.id.cancelButton).visibility =
 					View.GONE
+
+				val downloadButton = findViewById<View>(R.id.downloadButton)
+				downloadButton.setOnClickListener {
+					saveApk(patchedApk)
+				}
+				downloadButton.visibility = View.VISIBLE
+
 				showAlertDialog(
 					getString(R.string.ready_to_install),
 					positiveButtonText = getString(R.string.next),
@@ -301,7 +421,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 						uninstallApp()
 					},
 				)
-
 			}
 		}
 	}

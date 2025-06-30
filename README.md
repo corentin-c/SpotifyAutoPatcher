@@ -23,13 +23,13 @@ Whats it does :
 - Apply all existing patches for Spotify
 - Rebuild the APK
 - Allow you to uninstall the store version before installing the patched one
+- Allow you to save the APK in your "Downloads" folder.
 
 But this app :
 - Cannot patch anything else than Spotify
 - Cannot patch an already patched version of Spotify
 - Cannot patch a version of Spotify installed from an APK
 - Doesn't allow you to choose which patches are applied
-- Doesn't allow you to save the patched APK
 
 ## Used projects
 
@@ -42,4 +42,6 @@ But this app :
 
 * QUERY_ALL_PACKAGES - to extract the APK from the installed Spotify app
 * REQUEST_INSTALL_PACKAGES - to show an install button allowing prompt to install an app after merging it
-* Internet permission - to retrieve the latest revanced patches
+* REQUEST_DELETE_PACKAGES - to show an uninstall button allowing prompt to uninstall an app after merging it
+* INTERNET - to retrieve the latest revanced patches
+* WRITE_EXTERNAL_STORAGE - to retrieve the latest revanced patches
