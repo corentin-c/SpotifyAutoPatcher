@@ -97,4 +97,6 @@
     <string name="next">Next</string>
     <string name="zip_exception_error">There seems to be an error with the current file system, you can try to apply the fix that will close the app and clear the app to factory settings, or simply retry.</string>
     <string name="fix">Fix</string>
+    <string name="could_not_save_apk">Could not save apk</string>
+    <string name="apk_saved">APK saved in Downloads folder</string>
 </resources>

@@ -77,7 +77,7 @@
             app:elevation="0dp"
             android:tooltipText="@string/app_name"
             android:contentDescription="@string/install"
-            android:src="@android:drawable/ic_menu_upload"
+            android:src="@drawable/open_in_new"
             android:layout_marginBottom="5dp"
             android:visibility="gone"
             tools:visibility="visible"

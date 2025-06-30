@@ -52,7 +52,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.OutputStream
 import java.nio.channels.ClosedByInterruptException
 import java.util.Calendar
 import java.util.Objects
@@ -178,64 +177,95 @@ class MainActivity : AppCompatActivity(), LogListener {
 				Merger.run(bundle, defaultFolder, uri, this@MainActivity)
 				val apk = File(defaultFolder, "unpatched.apk")
 				apk.copyUriToFile(this@MainActivity, uri)
-
-				runOnUiThread {
-					val downloadButton = findViewById<View>(R.id.downloadButton)
-					downloadButton.setOnClickListener {
-						// Android 10 and above
-						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-							val context = applicationContext
-							val contentResolver: ContentResolver = context.contentResolver
-							val contentValues = ContentValues()
-							contentValues.put(
-								MediaStore.Downloads.DISPLAY_NAME,
-								"Spotify-SpotifyAutoPatcher-" + Calendar.getInstance().timeInMillis + ".apk"
-							)
-							contentValues.put(
-								MediaStore.Downloads.MIME_TYPE,
-								"application/vnd.android.package-archive"
-							)
-							contentValues.put(
-								MediaStore.Downloads.RELATIVE_PATH,
-								Environment.DIRECTORY_DOWNLOADS
-							)
-
-							val contentUri =
-								MediaStore.Downloads.EXTERNAL_CONTENT_URI
-							val itemUri: Uri? = contentResolver.insert(contentUri, contentValues)!!
-
-							val outputStream: OutputStream =
-								contentResolver.openOutputStream(itemUri!!)!!
-							apk.inputStream().use { stream ->
-								stream.copyTo(outputStream)
-							}
-						} else {
-							// TODO: Android 9 and below
-							val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
-								Environment.DIRECTORY_DOWNLOADS
-							)
-
-							if (!downloadsDirectory.exists()) {
-								downloadsDirectory.mkdirs()
-							}
-							val savedFile = File(
-								downloadsDirectory,
-								"Spotify-SpotifyAutoPatcher-" + Calendar.getInstance().timeInMillis + ".apk"
-							)
-							apk.inputStream().use { stream ->
-								savedFile.outputStream().use { outputStream ->
-									stream.copyTo(outputStream)
-								}
-							}
-						}
-					}
-					downloadButton.visibility = View.VISIBLE
-				}
-
 				startPatching(apk)
 			} catch (exception: Exception) {
 				showError(exception)
 			}
+		}
+	}
+
+	private fun saveApk(apk: File) {
+		val apkName =
+			"Spotify(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
+
+		val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
+			Environment.DIRECTORY_DOWNLOADS
+		)
+
+		if (!downloadsDirectory.exists()) {
+			downloadsDirectory.mkdirs()
+		}
+		// Android 10 and above
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+			val context = applicationContext
+			val contentResolver: ContentResolver = context.contentResolver
+			val contentValues = ContentValues()
+			contentValues.put(
+				MediaStore.Downloads.DISPLAY_NAME,
+				apkName
+			)
+			contentValues.put(
+				MediaStore.Downloads.MIME_TYPE,
+				"application/vnd.android.package-archive"
+			)
+			contentValues.put(
+				MediaStore.Downloads.RELATIVE_PATH,
+				Environment.DIRECTORY_DOWNLOADS
+			)
+
+			val contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+			val itemUri: Uri? = contentResolver.insert(contentUri, contentValues)
+			itemUri?.let {
+				contentResolver.openOutputStream(it).use { outputStream ->
+					outputStream?.let {
+						apk.inputStream().use { stream ->
+							stream.copyTo(outputStream)
+						}
+						showAlertDialog(
+							getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
+							positiveButtonText = getString(R.string.ok),
+							positiveButtonAction = {
+								// empty
+							},
+						)
+					} ?: run {
+						showAlertDialog(
+							getString(R.string.could_not_save_apk),
+							positiveButtonText = getString(R.string.ok),
+							positiveButtonAction = {
+								// empty
+							},
+						)
+					}
+				}
+			} ?: run {
+				showAlertDialog(
+					getString(R.string.could_not_save_apk),
+					positiveButtonText = getString(R.string.ok),
+					positiveButtonAction = {
+						// empty
+					},
+				)
+			}
+		} else {
+			// Android 9 and below
+			val savedFile = File(
+				downloadsDirectory,
+				apkName
+			)
+			apk.inputStream().use { stream ->
+				savedFile.outputStream().use { outputStream ->
+					stream.copyTo(outputStream)
+				}
+			}
+
+			showAlertDialog(
+				getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
+				positiveButtonText = getString(R.string.ok),
+				positiveButtonAction = {
+					// empty
+				},
+			)
 		}
 	}
 
@@ -353,6 +383,13 @@ class MainActivity : AppCompatActivity(), LogListener {
 				onLog(getString(R.string.ready_to_install))
 				findViewById<View>(R.id.cancelButton).visibility =
 					View.GONE
+
+				val downloadButton = findViewById<View>(R.id.downloadButton)
+				downloadButton.setOnClickListener {
+					saveApk(patchedApk)
+				}
+				downloadButton.visibility = View.VISIBLE
+
 				showAlertDialog(
 					getString(R.string.ready_to_install),
 					positiveButtonText = getString(R.string.next),
@@ -360,7 +397,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 						uninstallApp()
 					},
 				)
-
 			}
 		}
 	}
