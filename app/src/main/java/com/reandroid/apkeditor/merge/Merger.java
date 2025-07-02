@@ -86,8 +86,14 @@ public class Merger {
             }
         }
         try (ApkModule mergedModule = bundle.mergeModules()) {
+            mergedModule.setModuleName("app.spotifyautopatcher.spotify");
+            mergedModule.setPackageName("app.spotifyautopatcher.spotify");
             if (mergedModule.hasAndroidManifest()) {
                 AndroidManifestBlock manifest = mergedModule.getAndroidManifest();
+                manifest.setPackageName("app.spotifyautopatcher.spotify");
+                manifest.setPackageName("app.spotifyautopatcher.spotify");
+                manifest.setApplicationLabel("app.spotifyautopatcher.spotify");
+                manifest.removePermission("com.spotify.music.permission.SECURED_BROADCAST");
                 logMessage(context.getString(R.string.sanitizing_manifest));
                 int ID_requiredSplitTypes = 0x0101064e;
                 int ID_splitTypes = 0x0101064f;
