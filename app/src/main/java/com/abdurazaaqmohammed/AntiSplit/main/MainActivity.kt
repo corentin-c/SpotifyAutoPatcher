@@ -34,6 +34,7 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
+import com.corentinc.patcher.AppUpdater
 import com.corentinc.patcher.ReVancedPatcher.patch
 import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.copyUriToFile
@@ -94,6 +95,10 @@ class MainActivity : AppCompatActivity(), LogListener {
 			) != PackageManager.PERMISSION_GRANTED
 		) {
 			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+		} else {
+			lifecycleScope.launch(Dispatchers.IO) {
+				AppUpdater.promptUpdateIfNeeded()
+			}
 		}
 		defaultFolder = File(cacheDir, TEMP_FOLDER)
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()

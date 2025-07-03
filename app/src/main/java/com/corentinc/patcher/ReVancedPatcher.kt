@@ -10,14 +10,15 @@ import com.abdurazaaqmohammed.AntiSplit.main.PACKAGE_TO_PATCH
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.reandroid.apkeditor.merge.Merger.LogListener
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.net.URL
 
 object ReVancedPatcher {
-	suspend fun patch(context: Context, apk: File, tmpDirectory: File, logListener: LogListener): File {
+	suspend fun patch(
+		context: Context,
+		apk: File,
+		tmpDirectory: File,
+		logListener: LogListener
+	): File {
 		logListener.onLog("Getting patches...")
 		val patchesFile = getPatches(tmpDirectory)
 		val patches =
@@ -74,31 +75,14 @@ object ReVancedPatcher {
 		return signedPatchedApk
 	}
 
-	private fun readInputStream(inputStream: InputStream): String {
-		val bufferedReader = BufferedReader(InputStreamReader(inputStream))
-		var totalString = ""
-		var line: String?
-		while (bufferedReader.readLine().also { line = it } != null) {
-			totalString += "$line\n"
-		}
-		return totalString
-	}
 
 	private fun getPatches(tmpDirectory: File): File {
-		val patchesInfoURL = URL("https://api.revanced.app/v4/patches")
-		val urlConnection = patchesInfoURL.openConnection()
-		urlConnection.connectTimeout = 4000
-		val string = readInputStream(urlConnection.getInputStream())
+		val string = UrlDownloader.downloadStringFromUrl("https://api.revanced.app/v4/patches")
 		val itemType = object : TypeToken<ReVancedPatchesInfo>() {
 			// empty
 		}.type
 		val patchesInfo = Gson().fromJson<ReVancedPatchesInfo>(string, itemType)
-		val patchesUrl = URL(patchesInfo.download_url)
-		val patchesUrlConnection = patchesUrl.openConnection()
-		patchesUrlConnection.connectTimeout = 4000
-		val patchesFile = File(tmpDirectory, "patches.rvp")
-		patchesFile.fromInputStream(patchesUrlConnection.getInputStream())
-		return patchesFile
+		return UrlDownloader.downloadFileFromUrl(patchesInfo.download_url, tmpDirectory)
 	}
 
 }
