@@ -7,7 +7,7 @@ import com.reandroid.apkeditor.merge.LogUtil
 import java.io.File
 
 object AppUpdater {
-	fun promptUpdateIfNeeded(context: Context, tmpDirectory: File) {
+	fun promptUpdateIfNeeded(context: Context, tmpDirectory: File) = runCatching {
 		if (isUpdateAvailable()) {
 			LogUtil.logMessage(context.getString(R.string.update_available))
 			LogUtil.logMessage("Downloading latest version...")

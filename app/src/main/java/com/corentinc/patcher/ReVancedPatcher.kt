@@ -7,8 +7,10 @@ import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
 import app.revanced.patcher.patch.loadPatchesFromDex
 import com.abdurazaaqmohammed.AntiSplit.main.PACKAGE_TO_PATCH
+import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.reandroid.apkeditor.merge.LogUtil.logMessage
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import java.io.File
 
@@ -20,7 +22,7 @@ object ReVancedPatcher {
 		logListener: LogListener
 	): File {
 		logListener.onLog("Getting patches...")
-		val patchesFile = getPatches(tmpDirectory)
+		val patchesFile = getPatches(context, tmpDirectory)
 		val patches =
 			loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = tmpDirectory)
 		logListener.onLog("Filtering patches...")
@@ -76,12 +78,17 @@ object ReVancedPatcher {
 	}
 
 
-	private fun getPatches(tmpDirectory: File): File {
+	private fun getPatches(context: Context, tmpDirectory: File): File {
 		val string = UrlDownloader.downloadStringFromUrl("https://api.revanced.app/v4/patches")
 		val itemType = object : TypeToken<ReVancedPatchesInfo>() {
 			// empty
 		}.type
 		val patchesInfo = Gson().fromJson<ReVancedPatchesInfo>(string, itemType)
+		logMessage(
+			context.getString(
+				R.string.download_revanced_patches_version,
+				patchesInfo.version
+			))
 		return UrlDownloader.downloadFileFromUrl(patchesInfo.download_url, tmpDirectory)
 	}
 

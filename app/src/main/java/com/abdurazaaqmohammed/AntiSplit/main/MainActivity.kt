@@ -97,6 +97,9 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 		lifecycleScope.launch(Dispatchers.IO) {
 			AppUpdater.promptUpdateIfNeeded(this@MainActivity, defaultFolder)
+				.onFailure { exception ->
+					showError(exception)
+				}
 			showAlertDialog(
 				getString(R.string.before_start_message),
 				positiveButtonText = getString(R.string.start),
