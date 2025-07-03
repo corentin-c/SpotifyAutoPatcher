@@ -7,16 +7,24 @@ import com.reandroid.apkeditor.merge.LogUtil
 import java.io.File
 
 object AppUpdater {
-	fun promptUpdateIfNeeded(context: Context, tmpDirectory: File) = runCatching {
-		if (isUpdateAvailable()) {
-			LogUtil.logMessage(context.getString(R.string.update_available))
-			LogUtil.logMessage("Downloading latest version...")
-			val latestVersionApk = downloadLatestVersion(tmpDirectory)
-			AppInstaller.installApp(context, latestVersionApk)
-		} else {
-			LogUtil.logMessage("No update available")
+	private var latestVersionName: String? = null
+
+	fun checkIfAnUpdateIsAvailable(
+		context: Context,
+		tmpDirectory: File,
+		onUpdateAvailable: (latestVersionApk: File) -> Unit,
+		onUpdateNotAvailable: () -> Unit,
+	) =
+		runCatching {
+			if (isUpdateAvailable()) {
+				LogUtil.logMessage(context.getString(R.string.update_available))
+				LogUtil.logMessage(context.getString(R.string.downloading_latest_version) + " v${getLatestVersionName()}")
+				val latestVersionApk = downloadLatestVersion(tmpDirectory)
+				onUpdateAvailable(latestVersionApk)
+			} else {
+				onUpdateNotAvailable()
+			}
 		}
-	}
 
 	private fun isUpdateAvailable(): Boolean {
 		getLatestVersionName()?.let { latestVersionName ->
@@ -28,11 +36,17 @@ object AppUpdater {
 	}
 
 	private fun getLatestVersionName(): String? {
-		val string =
-			UrlDownloader.downloadStringFromUrl("https://github.com/corentin-c/SpotifyAutoPatcher/releases/latest")
-		val versionNumberRegex = Regex("<title>Release\\s+([0-9]+(?:\\.[0-9]+)+)")
-		val match = versionNumberRegex.find(string)
-		return match?.groupValues?.getOrNull(1)
+		if (latestVersionName != null) {
+			return latestVersionName
+		} else {
+			val string =
+				UrlDownloader.downloadStringFromUrl("https://github.com/corentin-c/SpotifyAutoPatcher/releases/latest")
+			val versionNumberRegex = Regex("<title>Release\\s+([0-9]+(?:\\.[0-9]+)+)")
+			val match = versionNumberRegex.find(string)
+			val versionName = match?.groups?.get(1)?.value
+			latestVersionName = versionName
+			return versionName
+		}
 	}
 
 	private fun downloadLatestVersion(tmpDirectory: File): File {

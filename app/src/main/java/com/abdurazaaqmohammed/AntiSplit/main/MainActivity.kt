@@ -95,20 +95,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		) {
 			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 		}
-		lifecycleScope.launch(Dispatchers.IO) {
-			AppUpdater.promptUpdateIfNeeded(this@MainActivity, defaultFolder)
-				.onFailure { exception ->
-					showError(exception)
-				}
-			showAlertDialog(
-				getString(R.string.before_start_message),
-				positiveButtonText = getString(R.string.start),
-				positiveButtonAction = {
-					mergeAndPatchApk()
-				},
-			)
-		}
-
 		defaultFolder = File(cacheDir, TEMP_FOLDER)
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())
@@ -119,6 +105,49 @@ class MainActivity : AppCompatActivity(), LogListener {
 		logField = findViewById(R.id.logField)
 		LogUtil.setLogListener(this)
 		LogUtil.logEnabled = true
+
+		lifecycleScope.launch(Dispatchers.IO) {
+			AppUpdater.checkIfAnUpdateIsAvailable(
+				this@MainActivity,
+				defaultFolder,
+				onUpdateAvailable = { latestVersionApk ->
+					showAlertDialog(
+						getString(R.string.a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it),
+						positiveButtonText = getString(R.string.install),
+						positiveButtonAction = {
+							AppInstaller.installApp(this@MainActivity, latestVersionApk)
+							showStartProcessDialog()
+
+						},
+						neutralButtonText = getString(R.string.skip),
+						neutralButtonAction = {
+							showStartProcessDialog()
+						}
+					)
+				},
+				onUpdateNotAvailable = {
+					LogUtil.logMessage(getString(R.string.no_update_available))
+					showStartProcessDialog()
+				}).onFailure { exception ->
+				LogUtil.logMessage(
+					getString(
+						R.string.could_not_check_for_spotifyautopatcher_updates,
+						exception
+					)
+				)
+				showStartProcessDialog()
+			}
+		}
+	}
+
+	private fun showStartProcessDialog() {
+		showAlertDialog(
+			getString(R.string.before_start_message),
+			positiveButtonText = getString(R.string.start),
+			positiveButtonAction = {
+				mergeAndPatchApk()
+			},
+		)
 	}
 
 	private fun showAlertDialog(
