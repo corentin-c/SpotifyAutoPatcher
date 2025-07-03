@@ -4,9 +4,6 @@ import android.Manifest
 import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.ContentResolver
-import android.content.ContentValues
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,14 +11,11 @@ import android.content.pm.PackageManager.NameNotFoundException
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
-import android.provider.OpenableColumns
 import android.support.v4.content.FileProvider
 import android.util.Log
 import android.util.TypedValue
@@ -41,8 +35,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.ReVancedPatcher.patch
+import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.copyUriToFile
 import com.corentinc.patcher.isNetworkException
+import com.corentinc.patcher.saveToDownloadsFolder
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.reandroid.apk.ApkBundle
@@ -55,11 +51,12 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.channels.ClosedByInterruptException
 import java.util.Calendar
-import java.util.Objects
 import java.util.zip.ZipException
 import kotlin.io.path.createDirectory
 
 const val PACKAGE_TO_PATCH = "com.spotify.music"
+private const val TEMP_FOLDER = "temp"
+private const val FILE_PROVIDER_NAME = "com.github.corentinc.SpotifyAutoPatcher.provider"
 
 class MainActivity : AppCompatActivity(), LogListener {
 	private lateinit var defaultFolder: File
@@ -80,6 +77,15 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
+	private val uninstallCallback =
+		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+			installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
+		}
+
+
+	private var logField: TextView? = null
+	private var scrollView: NestedScrollView? = null
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(
@@ -89,10 +95,10 @@ class MainActivity : AppCompatActivity(), LogListener {
 		) {
 			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 		}
-		defaultFolder = File(cacheDir, "SpotifyAutoPatcher")
+		defaultFolder = File(cacheDir, TEMP_FOLDER)
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())
-		clearDirectory(defaultFolder)
+		defaultFolder.clearDirectory()
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		setContentView(R.layout.activity_main)
 		scrollView = findViewById(R.id.scrollView)
@@ -103,10 +109,41 @@ class MainActivity : AppCompatActivity(), LogListener {
 			getString(R.string.before_start_message),
 			positiveButtonText = getString(R.string.start),
 			positiveButtonAction = {
-				process()
+				mergeAndPatchApk()
 			},
 		)
 
+	}
+
+	private fun showAlertDialog(
+		text: String,
+		positiveButtonText: String,
+		positiveButtonAction: () -> Unit,
+		neutralButtonText: String? = null,
+		neutralButtonAction: (() -> Unit)? = null,
+	) {
+		runOnUiThread {
+			val builder = MaterialAlertDialogBuilder(this)
+			builder.setCancelable(false)
+			builder.setMessage(text)
+			builder.setPositiveButton(
+				positiveButtonText
+			) { dialog: DialogInterface, _: Int ->
+				positiveButtonAction()
+				dialog.dismiss()
+			}
+			neutralButtonText?.let {
+				neutralButtonAction?.let {
+					builder.setNeutralButton(
+						neutralButtonText
+					) { dialog: DialogInterface, _: Int ->
+						neutralButtonAction()
+						dialog.dismiss()
+					}
+				}
+			}
+			styleAlertDialog(builder.create())
+		}
 	}
 
 	private fun styleAlertDialog(ad: AlertDialog) {
@@ -141,9 +178,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 	}
 
-	private var logField: TextView? = null
-	private var scrollView: NestedScrollView? = null
-
 	override fun onLog(msg: CharSequence) {
 		onLog(msg.toString())
 	}
@@ -163,7 +197,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 	var handler: Handler? = null
 		private set
 
-	private fun process() {
+	private fun mergeAndPatchApk() {
 		onLog("Merging APK...")
 		findViewById<View>(R.id.installButton).visibility =
 			View.GONE
@@ -172,7 +206,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 		val cancelButton = findViewById<View>(R.id.cancelButton)
 		cancelButton.visibility = View.VISIBLE
 		cancelButton.setOnClickListener {
-			cancel()
+			restartActivity()
 		}
 
 		val copyButton = findViewById<View>(R.id.copyButton)
@@ -209,60 +243,11 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private fun saveApk(apk: File) {
-		val apkName =
+		apk.saveToDownloadsFolder(
+			contentResolver,
 			"Spotify(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
-
-		val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
-			Environment.DIRECTORY_DOWNLOADS
 		)
-
-		if (!downloadsDirectory.exists()) {
-			downloadsDirectory.mkdirs()
-		}
-		// Android 10 and above
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-			val context = applicationContext
-			val contentResolver: ContentResolver = context.contentResolver
-			val contentValues = ContentValues()
-			contentValues.put(
-				MediaStore.Downloads.DISPLAY_NAME,
-				apkName
-			)
-			contentValues.put(
-				MediaStore.Downloads.MIME_TYPE,
-				"application/vnd.android.package-archive"
-			)
-			contentValues.put(
-				MediaStore.Downloads.RELATIVE_PATH,
-				Environment.DIRECTORY_DOWNLOADS
-			)
-
-			val contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-			val itemUri: Uri? = contentResolver.insert(contentUri, contentValues)
-			itemUri?.let {
-				contentResolver.openOutputStream(it).use { outputStream ->
-					outputStream?.let {
-						apk.inputStream().use { stream ->
-							stream.copyTo(outputStream)
-						}
-						showAlertDialog(
-							getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
-							positiveButtonText = getString(R.string.ok),
-							positiveButtonAction = {
-								// empty
-							},
-						)
-					} ?: run {
-						showAlertDialog(
-							getString(R.string.could_not_save_apk),
-							positiveButtonText = getString(R.string.ok),
-							positiveButtonAction = {
-								// empty
-							},
-						)
-					}
-				}
-			} ?: run {
+			.onFailure {
 				showAlertDialog(
 					getString(R.string.could_not_save_apk),
 					positiveButtonText = getString(R.string.ok),
@@ -271,29 +256,21 @@ class MainActivity : AppCompatActivity(), LogListener {
 					},
 				)
 			}
-		} else {
-			// Android 9 and below
-			val savedFile = File(
-				downloadsDirectory,
-				apkName
-			)
-			apk.inputStream().use { stream ->
-				savedFile.outputStream().use { outputStream ->
-					stream.copyTo(outputStream)
-				}
+			.onSuccess {
+				val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
+					Environment.DIRECTORY_DOWNLOADS
+				)
+				showAlertDialog(
+					getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
+					positiveButtonText = getString(R.string.ok),
+					positiveButtonAction = {
+						// empty
+					},
+				)
 			}
-
-			showAlertDialog(
-				getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
-				positiveButtonText = getString(R.string.ok),
-				positiveButtonAction = {
-					// empty
-				},
-			)
-		}
 	}
 
-	private fun cancel() {
+	private fun restartActivity() {
 		var intent = packageManager.getLaunchIntentForPackage(packageName)
 		if (intent == null) {
 			intent = getIntent()
@@ -302,37 +279,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		} else {
 			startActivity(Intent.makeRestartActivityTask(intent.component))
 			Runtime.getRuntime().exit(0)
-		}
-	}
-
-	private fun showAlertDialog(
-		text: String,
-		positiveButtonText: String,
-		positiveButtonAction: () -> Unit,
-		neutralButtonText: String? = null,
-		neutralButtonAction: (() -> Unit)? = null,
-	) {
-		runOnUiThread {
-			val builder = MaterialAlertDialogBuilder(this)
-			builder.setCancelable(false)
-			builder.setMessage(text)
-			builder.setPositiveButton(
-				positiveButtonText
-			) { dialog: DialogInterface, _: Int ->
-				positiveButtonAction()
-				dialog.dismiss()
-			}
-			neutralButtonText?.let {
-				neutralButtonAction?.let {
-					builder.setNeutralButton(
-						neutralButtonText
-					) { dialog: DialogInterface, _: Int ->
-						neutralButtonAction()
-						dialog.dismiss()
-					}
-				}
-			}
-			styleAlertDialog(builder.create())
 		}
 	}
 
@@ -365,17 +311,12 @@ class MainActivity : AppCompatActivity(), LogListener {
 				.setData(
 					FileProvider.getUriForFile(
 						applicationContext,
-						"com.github.corentinc.SpotifyAutoPatcher.provider",
+						FILE_PROVIDER_NAME,
 						patchedApk
 					)
 				)
 		)
 	}
-
-	private val uninstallCallback =
-		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-			installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
-		}
 
 	private fun uninstallApp() {
 		val uri = "package:$PACKAGE_TO_PATCH".toUri()
@@ -388,40 +329,37 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 	private lateinit var patchedApk: File
 	private suspend fun startPatching(file: File) {
-		onLog("Merging APK succeeded !")
+		onLog(getString(R.string.merging_apk_succeeded))
 
 		val installButton = findViewById<View>(R.id.installButton)
-		if (errorOccurred) installButton.visibility = View.GONE
-		else {
-			val success = this.getString(R.string.success_saved)
-			LogUtil.logMessage(success)
-			patchedApk = patch(
-				applicationContext, file, defaultFolder,
-				this@MainActivity
-			)
-			runOnUiThread {
-				installButton.setOnClickListener {
-					installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
-				}
-				installButton.visibility = View.VISIBLE
-				onLog(getString(R.string.ready_to_install))
-				findViewById<View>(R.id.cancelButton).visibility =
-					View.GONE
-
-				val downloadButton = findViewById<View>(R.id.downloadButton)
-				downloadButton.setOnClickListener {
-					saveApk(patchedApk)
-				}
-				downloadButton.visibility = View.VISIBLE
-
-				showAlertDialog(
-					getString(R.string.ready_to_install),
-					positiveButtonText = getString(R.string.next),
-					positiveButtonAction = {
-						uninstallApp()
-					},
-				)
+		val success = this.getString(R.string.success_saved)
+		LogUtil.logMessage(success)
+		patchedApk = patch(
+			applicationContext, file, defaultFolder,
+			this@MainActivity
+		)
+		runOnUiThread {
+			installButton.setOnClickListener {
+				installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
 			}
+			installButton.visibility = View.VISIBLE
+			onLog(getString(R.string.ready_to_install))
+			findViewById<View>(R.id.cancelButton).visibility =
+				View.GONE
+
+			val downloadButton = findViewById<View>(R.id.downloadButton)
+			downloadButton.setOnClickListener {
+				saveApk(patchedApk)
+			}
+			downloadButton.visibility = View.VISIBLE
+
+			showAlertDialog(
+				getString(R.string.ready_to_install),
+				positiveButtonText = getString(R.string.next),
+				positiveButtonAction = {
+					uninstallApp()
+				},
+			)
 		}
 	}
 
@@ -445,7 +383,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 					getString(R.string.network_unavailable_error),
 					positiveButtonText = getString(R.string.retry),
 					positiveButtonAction = {
-						cancel()
+						restartActivity()
 					},
 				)
 			}
@@ -455,7 +393,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 					getString(R.string.app_not_found_error),
 					positiveButtonText = getString(R.string.retry),
 					positiveButtonAction = {
-						cancel()
+						restartActivity()
 					},
 				)
 			}
@@ -469,14 +407,13 @@ class MainActivity : AppCompatActivity(), LogListener {
 					},
 					neutralButtonText = getString(R.string.retry),
 					neutralButtonAction = {
-						cancel()
+						restartActivity()
 					}
 				)
 			}
 
 			error !is ClosedByInterruptException -> {
 				val mainErr = error.toString()
-				errorOccurred = mainErr != this.getString(R.string.sign_failed)
 
 				val stackTrace = StringBuilder(mainErr)
 
@@ -486,11 +423,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 					.append(this.getString(R.string.app_name)).append(' ')
 				val currentVer = packageManager.getPackageInfo(packageName, 0).versionName
 				fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
-					.append(
-						!doesNotHaveStoragePerm(
-							this
-						)
-					)
 					.append('\n').append(logField!!.text)
 
 				handler!!.post {
@@ -537,50 +469,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 						scrollView.layoutParams = params
 					}
 				}
-			}
-		}
-	}
-
-	companion object {
-		var errorOccurred: Boolean = false
-		var lang: String? = null
-
-		@JvmStatic
-		fun doesNotHaveStoragePerm(context: Context): Boolean {
-			return (if (LegacyUtils.supportsWriteExternalStorage) context.checkSelfPermission(
-				Manifest.permission.WRITE_EXTERNAL_STORAGE
-			) == PackageManager.PERMISSION_DENIED else !Environment.isExternalStorageManager())
-		}
-
-		fun clearDirectory(dir: File) {
-			dir.listFiles()?.forEach {
-				it.deleteRecursively()
-			}
-		}
-
-		@JvmStatic
-		fun getOriginalFileName(context: Context, uri: Uri): String {
-			var result: String? = null
-			try {
-				if (uri.scheme == "content") {
-					context.contentResolver.query(uri, null, null, null, null).use { cursor ->
-						if (cursor != null && cursor.moveToFirst()) {
-							result =
-								cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
-						}
-					}
-				}
-				if (result == null) {
-					result = uri.path
-					val cut = Objects.requireNonNull<String?>(result)
-						.lastIndexOf('/') // Ensure it throw the NullPointerException here to be caught
-					if (cut != -1) result = result!!.substring(cut + 1)
-				}
-				LogUtil.logMessage(result)
-				val suffix = "_antisplit"
-				return result!!.replaceFirst("\\.(?:xapk|aspk|apk[sm])".toRegex(), "$suffix.apk")
-			} catch (ignored: Exception) {
-				return "filename_not_found"
 			}
 		}
 	}

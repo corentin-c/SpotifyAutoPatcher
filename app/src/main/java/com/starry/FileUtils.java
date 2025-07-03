@@ -1,18 +1,20 @@
 package com.starry;
 
-import static com.abdurazaaqmohammed.AntiSplit.main.MainActivity.doesNotHaveStoragePerm;
-import static com.abdurazaaqmohammed.AntiSplit.main.MainActivity.getOriginalFileName;
-
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
 
 import com.abdurazaaqmohammed.AntiSplit.main.LegacyUtils;
+import com.reandroid.apkeditor.merge.LogUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 public class FileUtils {
 
@@ -68,7 +71,7 @@ public class FileUtils {
     }
 
     public static void copyFile(File in, OutputStream os) throws IOException {
-        try(InputStream is = getInputStream(in)) {
+        try (InputStream is = getInputStream(in)) {
             copyFile(is, os);
         }
     }
@@ -80,7 +83,7 @@ public class FileUtils {
     }
 
     public static void copyFile(InputStream is, OutputStream os) throws IOException {
-        if(LegacyUtils.supportsWriteExternalStorage) {
+        if (LegacyUtils.supportsWriteExternalStorage) {
             byte[] buffer = new byte[1024];
             int length;
             while ((length = is.read(buffer)) > 0) os.write(buffer, 0, length);
@@ -89,7 +92,8 @@ public class FileUtils {
 
     public static OutputStream getOutputStream(Uri uri, Context context) throws IOException {
         String uriPath;
-        if(doesNotHaveStoragePerm(context) || (uriPath = uri.getPath()) == null || uriPath.startsWith("/document/msf:")) return context.getContentResolver().openOutputStream(uri);
+        if (doesNotHaveStoragePerm(context) || (uriPath = uri.getPath()) == null || uriPath.startsWith("/document/msf:"))
+            return context.getContentResolver().openOutputStream(uri);
         String filePath = getPath(uri, context);
         File file = filePath == null ? null : new File(filePath);
         return file != null && file.canWrite() ? getOutputStream(file) : context.getContentResolver().openOutputStream(uri);
@@ -106,7 +110,8 @@ public class FileUtils {
     }
 
     public static InputStream getInputStream(Uri uri, Context context) throws IOException {
-        if(doesNotHaveStoragePerm(context)) return context.getContentResolver().openInputStream(uri);
+        if (doesNotHaveStoragePerm(context))
+            return context.getContentResolver().openInputStream(uri);
         String filePath = getPath(uri, context);
         File file = filePath == null ? null : new File(filePath);
         return file != null && file.canRead() ? getInputStream(file) : context.getContentResolver().openInputStream(uri);
@@ -180,17 +185,19 @@ public class FileUtils {
             if (docId.startsWith("msf:")) {
                 final String[] split = docId.split(":");
                 selection = "_id=?";
-                selectionArgs = new String[] { split[1] };
+                selectionArgs = new String[]{split[1]};
                 String relativePath = getDataColumn(context, MediaStore.Downloads.EXTERNAL_CONTENT_URI, selection, selectionArgs);
-                if(TextUtils.isEmpty(relativePath)) try (Cursor cursor = context.getContentResolver().query(uri, new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, null, null, null)) {
-                    if (cursor != null && cursor.moveToFirst()) {
-                        String fileName = cursor.getString(0);
-                        String path = Environment.getExternalStorageDirectory() + "/Download/" + fileName;
-                        if (!TextUtils.isEmpty(path)) {
-                            return path;
+                if (TextUtils.isEmpty(relativePath))
+                    try (Cursor cursor = context.getContentResolver().query(uri, new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, null, null, null)) {
+                        if (cursor != null && cursor.moveToFirst()) {
+                            String fileName = cursor.getString(0);
+                            String path = Environment.getExternalStorageDirectory() + "/Download/" + fileName;
+                            if (!TextUtils.isEmpty(path)) {
+                                return path;
+                            }
                         }
                     }
-                } else return relativePath;
+                else return relativePath;
             }
 
             String id = DocumentsContract.getDocumentId(uri);
@@ -257,7 +264,7 @@ public class FileUtils {
 
     public static File copyFileToInternalStorage(Uri uri, Context context) throws IOException {
         File output = new File(context.getCacheDir(), getOriginalFileName(context, uri));
-        if(output.exists() && output.length() > 999) return output;
+        if (output.exists() && output.length() > 999) return output;
         try (OutputStream outputStream = FileUtils.getOutputStream(output); InputStream cursor = context.getContentResolver().openInputStream(uri)) {
             int read;
             byte[] buffers = new byte[1024];
@@ -266,6 +273,34 @@ public class FileUtils {
             }
         }
         return output;
+    }
+
+    public static boolean doesNotHaveStoragePerm(Context context) {
+        return Build.VERSION.SDK_INT > 22 && (LegacyUtils.supportsWriteExternalStorage ?
+                context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED :
+                !Environment.isExternalStorageManager());
+    }
+
+    public static String getOriginalFileName(Context context, Uri uri) {
+        String result = null;
+        try {
+            if (Objects.equals(uri.getScheme(), "content")) {
+                try (Cursor cursor = context.getContentResolver().query(uri, null, null, null, null)) {
+                    if (cursor != null && cursor.moveToFirst()) {
+                        result = cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME));
+                    }
+                }
+            }
+            if (result == null) {
+                result = uri.getPath();
+                int cut = Objects.requireNonNull(result).lastIndexOf('/'); // Ensure it throw the NullPointerException here to be caught
+                if (cut != -1) result = result.substring(cut + 1);
+            }
+            LogUtil.logMessage(result);
+            return result.replaceFirst("\\.(?:xapk|aspk|apk[sm])", "_antisplit" + ".apk");
+        } catch (Exception ignored) {
+            return "filename_not_found";
+        }
     }
 
     private static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
