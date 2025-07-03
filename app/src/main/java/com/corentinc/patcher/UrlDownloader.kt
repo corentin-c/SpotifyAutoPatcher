@@ -16,7 +16,7 @@ object UrlDownloader {
 	fun downloadFileFromUrl(url: String, tmpDirectory: File): File {
 		val urlConnection = URL(url).openConnection()
 		urlConnection.connectTimeout = 4000
-		val file = File(tmpDirectory, "downloadedFile")
+		val file = File(tmpDirectory, "downloadedFile.apk")
 		file.fromInputStream(urlConnection.getInputStream())
 		return file
 	}

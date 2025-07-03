@@ -16,7 +16,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.support.v4.content.FileProvider
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
@@ -34,6 +33,7 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
+import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.AppUpdater
 import com.corentinc.patcher.ReVancedPatcher.patch
 import com.corentinc.patcher.clearDirectory
@@ -57,7 +57,6 @@ import kotlin.io.path.createDirectory
 
 const val PACKAGE_TO_PATCH = "com.spotify.music"
 private const val TEMP_FOLDER = "temp"
-private const val FILE_PROVIDER_NAME = "com.github.corentinc.SpotifyAutoPatcher.provider"
 
 class MainActivity : AppCompatActivity(), LogListener {
 	private lateinit var defaultFolder: File
@@ -95,11 +94,18 @@ class MainActivity : AppCompatActivity(), LogListener {
 			) != PackageManager.PERMISSION_GRANTED
 		) {
 			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-		} else {
-			lifecycleScope.launch(Dispatchers.IO) {
-				AppUpdater.promptUpdateIfNeeded()
-			}
 		}
+		lifecycleScope.launch(Dispatchers.IO) {
+			AppUpdater.promptUpdateIfNeeded(this@MainActivity, defaultFolder)
+			showAlertDialog(
+				getString(R.string.before_start_message),
+				positiveButtonText = getString(R.string.start),
+				positiveButtonAction = {
+					mergeAndPatchApk()
+				},
+			)
+		}
+
 		defaultFolder = File(cacheDir, TEMP_FOLDER)
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		handler = Handler(Looper.getMainLooper())
@@ -110,14 +116,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		logField = findViewById(R.id.logField)
 		LogUtil.setLogListener(this)
 		LogUtil.logEnabled = true
-		showAlertDialog(
-			getString(R.string.before_start_message),
-			positiveButtonText = getString(R.string.start),
-			positiveButtonAction = {
-				mergeAndPatchApk()
-			},
-		)
-
 	}
 
 	private fun showAlertDialog(
@@ -300,36 +298,12 @@ class MainActivity : AppCompatActivity(), LogListener {
 				},
 				neutralButtonText = getString(R.string.install_anyway_not_recommended),
 				neutralButtonAction = {
-					installApp(patchedApk)
+					AppInstaller.installApp(this, patchedApk)
 				}
 			)
 		} catch (exception: NameNotFoundException) {
-			installApp(patchedApk)
+			AppInstaller.installApp(this, patchedApk)
 		}
-	}
-
-	private fun installApp(patchedApk: File) {
-		startActivity(
-			Intent(Intent.ACTION_INSTALL_PACKAGE)
-				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-				.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-				.setData(
-					FileProvider.getUriForFile(
-						applicationContext,
-						FILE_PROVIDER_NAME,
-						patchedApk
-					)
-				)
-		)
-	}
-
-	private fun uninstallApp() {
-		val uri = "package:$PACKAGE_TO_PATCH".toUri()
-		uninstallCallback.launch(
-			Intent(Intent.ACTION_UNINSTALL_PACKAGE, uri)
-				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-				.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-		)
 	}
 
 	private lateinit var patchedApk: File
@@ -362,7 +336,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 				getString(R.string.ready_to_install),
 				positiveButtonText = getString(R.string.next),
 				positiveButtonAction = {
-					uninstallApp()
+					AppInstaller.uninstallApp(uninstallCallback)
 				},
 			)
 		}

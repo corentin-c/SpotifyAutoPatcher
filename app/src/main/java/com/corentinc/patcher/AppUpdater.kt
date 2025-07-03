@@ -1,11 +1,20 @@
 package com.corentinc.patcher
 
+import android.content.Context
 import com.github.corentinc.SpotifyAutoPatcher.BuildConfig
+import com.github.corentinc.SpotifyAutoPatcher.R
+import com.reandroid.apkeditor.merge.LogUtil
+import java.io.File
 
 object AppUpdater {
-	fun promptUpdateIfNeeded() {
+	fun promptUpdateIfNeeded(context: Context, tmpDirectory: File) {
 		if (isUpdateAvailable()) {
-
+			LogUtil.logMessage(context.getString(R.string.update_available))
+			LogUtil.logMessage("Downloading latest version...")
+			val latestVersionApk = downloadLatestVersion(tmpDirectory)
+			AppInstaller.installApp(context, latestVersionApk)
+		} else {
+			LogUtil.logMessage("No update available")
 		}
 	}
 
@@ -24,5 +33,12 @@ object AppUpdater {
 		val versionNumberRegex = Regex("<title>Release\\s+([0-9]+(?:\\.[0-9]+)+)")
 		val match = versionNumberRegex.find(string)
 		return match?.groupValues?.getOrNull(1)
+	}
+
+	private fun downloadLatestVersion(tmpDirectory: File): File {
+		val latestVersion = getLatestVersionName()
+		val url =
+			"https://github.com/corentin-c/SpotifyAutoPatcher/releases/latest/download/SpotifyAutoPatcher-$latestVersion.apk"
+		return UrlDownloader.downloadFileFromUrl(url, tmpDirectory)
 	}
 }
