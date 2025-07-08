@@ -18,12 +18,9 @@ package com.reandroid.apkeditor.merge;
 import static com.reandroid.apkeditor.merge.LogUtil.logMessage;
 
 import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 
-import com.abdurazaaqmohammed.AntiSplit.main.MainActivity;
 import com.github.corentinc.SpotifyAutoPatcher.R;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.reandroid.apk.ApkBundle;
 import com.reandroid.apk.ApkModule;
 import com.reandroid.apkeditor.common.AndroidManifestHelper;
@@ -43,7 +40,6 @@ import com.starry.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 public class Merger {
 
@@ -68,19 +64,7 @@ public class Merger {
             else if (splitName.contains("v7a") || splitName.contains("arm7")) arch = "armeabi-v7a";
             if (arch != null) try (ApkModule zf = ApkModule.loadApkFile(split, splitName)) {
                 if (zf.containsFile("lib" + File.separator + arch + File.separator + "libpairipcore.so")) {
-                    final CountDownLatch latch = new CountDownLatch(1);
-                    MainActivity act = ((MainActivity) context);
-                    act.getHandler().post(() ->
-                            act.runOnUiThread(new MaterialAlertDialogBuilder(context).setTitle(context.getString(R.string.warning)).setMessage(R.string.pairip_warning)
-                                    .setPositiveButton("OK", (dialog, which) -> {
-                                        latch.countDown();
-                                    }).setNegativeButton(context.getString(R.string.cancel), (dialog, which) -> {
-                                        act.startActivity(new Intent(act, MainActivity.class));
-                                        act.finishAffinity();
-                                        latch.countDown();
-                                    })
-                                    .create()::show));
-                    latch.await();
+                    LogUtil.logMessage(context.getString(R.string.pairip_warning));
                     break;
                 }
             }
