@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 public class ApkBundle implements Closeable {
     private final Map<String, ApkModule> mModulesMap;
@@ -213,9 +212,7 @@ public class ApkBundle implements Closeable {
             throw new MismatchedSplitsException("Error: All DPI/resource splits selected have a mismatched version code.");
         String s = mismatchedLangs.toString();
         if (!TextUtils.isEmpty(s)) {
-            final CountDownLatch latch = new CountDownLatch(1);
             LogUtil.logMessage(context.getString(R.string.mismatch, s.replaceFirst(", ", "")));
-            latch.await();
         }
         load(apkList);
     }
