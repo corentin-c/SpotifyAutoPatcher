@@ -14,8 +14,6 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
@@ -97,7 +95,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 		defaultFolder = File(cacheDir, TEMP_FOLDER)
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
-		handler = Handler(Looper.getMainLooper())
 		defaultFolder.clearDirectory()
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		setContentView(R.layout.activity_main)
@@ -228,9 +225,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 	override fun onLog(resID: Int) {
 		onLog(this.getString(resID))
 	}
-
-	var handler: Handler? = null
-		private set
 
 	private fun mergeAndPatchApk() {
 		onLog("Merging APK...")
@@ -436,49 +430,47 @@ class MainActivity : AppCompatActivity(), LogListener {
 				fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
 					.append('\n').append(logField!!.text)
 
-				handler!!.post {
-					runOnUiThread {
-						val dialogView = layoutInflater.inflate(
-							R.layout.dialog_button_layout,
-							null
-						)
-						(dialogView.findViewById<View>(R.id.errorD) as TextView).text =
-							stackTrace
+				runOnUiThread {
+					val dialogView = layoutInflater.inflate(
+						R.layout.dialog_button_layout,
+						null
+					)
+					(dialogView.findViewById<View>(R.id.errorD) as TextView).text =
+						stackTrace
 
-						styleAlertDialog(
-							MaterialAlertDialogBuilder(this)
-								.setTitle(mainErr)
-								.setCancelable(false)
-								.setView(dialogView)
-								.setPositiveButton(
-									this.getString(R.string.copy_log)
-								) { dialog: DialogInterface, _: Int ->
-									copyText(fullLog)
-									dialog.dismiss()
-								}
-								.setNegativeButton(
-									this.getString(R.string.create_issue)
-								) { dialog: DialogInterface, _: Int ->
-									startActivity(
-										Intent(
-											Intent.ACTION_VIEW,
-											"https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
-										)
+					styleAlertDialog(
+						MaterialAlertDialogBuilder(this)
+							.setTitle(mainErr)
+							.setCancelable(false)
+							.setView(dialogView)
+							.setPositiveButton(
+								this.getString(R.string.copy_log)
+							) { dialog: DialogInterface, _: Int ->
+								copyText(fullLog)
+								dialog.dismiss()
+							}
+							.setNegativeButton(
+								this.getString(R.string.create_issue)
+							) { dialog: DialogInterface, _: Int ->
+								startActivity(
+									Intent(
+										Intent.ACTION_VIEW,
+										"https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
 									)
-									dialog.dismiss()
-								}
-								.setNeutralButton(
-									this.getString(R.string.cancel)
-								) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
-								.create())
-						val scrollView =
-							dialogView.findViewById<ScrollView>(R.id.errorView)
+								)
+								dialog.dismiss()
+							}
+							.setNeutralButton(
+								this.getString(R.string.cancel)
+							) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
+							.create())
+					val scrollView =
+						dialogView.findViewById<ScrollView>(R.id.errorView)
 
-						val params = scrollView.layoutParams
-						params.height =
-							(this.resources.displayMetrics.heightPixels * 0.5).toInt()
-						scrollView.layoutParams = params
-					}
+					val params = scrollView.layoutParams
+					params.height =
+						(this.resources.displayMetrics.heightPixels * 0.5).toInt()
+					scrollView.layoutParams = params
 				}
 			}
 		}
