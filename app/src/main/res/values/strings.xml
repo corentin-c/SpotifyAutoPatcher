@@ -101,4 +101,11 @@
     <string name="apk_saved">APK saved in Downloads folder</string>
     <string name="storage_permission_denied_warning">You will not be able to save the APK without accepting the permission to access external storage</string>
     <string name="merging_apk_succeeded">Merging APK succeeded !</string>
+    <string name="update_available">Update available fro SpotifyAutoPatcher !</string>
+    <string name="download_revanced_patches_version">Downloaded ReVanced patches version %1$s</string>
+    <string name="no_update_available">No update available</string>
+    <string name="downloading_latest_version">Downloading latest version...</string>
+    <string name="could_not_check_for_spotifyautopatcher_updates">Could not check for SpotifyAutoPatcher updates : %1$s</string>
+    <string name="a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it">A new version of SpotifyAutoPatcher is available ! Do you want to install it ?</string>
+    <string name="skip">Skip</string>
 </resources>
