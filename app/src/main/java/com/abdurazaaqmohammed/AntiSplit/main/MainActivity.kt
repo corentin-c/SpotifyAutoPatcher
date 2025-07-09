@@ -77,7 +77,9 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 	private val uninstallCallback =
 		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-			installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
+			patchedApk?.let {
+				installAppOrShowPopUpIfAlreadyInstalled(it)
+			}
 		}
 
 
@@ -332,20 +334,21 @@ class MainActivity : AppCompatActivity(), LogListener {
 		}
 	}
 
-	private lateinit var patchedApk: File
+	private var patchedApk: File? = null
 	private suspend fun startPatching(file: File) {
 		onLog(getString(R.string.merging_apk_succeeded))
 
 		val installButton = findViewById<View>(R.id.installButton)
 		val success = this.getString(R.string.success_saved)
 		LogUtil.logMessage(success)
-		patchedApk = patch(
+		val patch = patch(
 			applicationContext, file, defaultFolder,
 			this@MainActivity
 		)
+		patchedApk = patch
 		runOnUiThread {
 			installButton.setOnClickListener {
-				installAppOrShowPopUpIfAlreadyInstalled(patchedApk)
+				installAppOrShowPopUpIfAlreadyInstalled(patch)
 			}
 			installButton.visibility = View.VISIBLE
 			onLog(getString(R.string.ready_to_install))
@@ -354,7 +357,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 			val downloadButton = findViewById<View>(R.id.downloadButton)
 			downloadButton.setOnClickListener {
-				saveApk(patchedApk)
+				saveApk(patch)
 			}
 			downloadButton.visibility = View.VISIBLE
 
