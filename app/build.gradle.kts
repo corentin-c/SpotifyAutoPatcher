@@ -1,6 +1,7 @@
 plugins {
 	id("com.android.application")
 	id("org.jetbrains.kotlin.android")
+	id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
 	// remove if you don't want firebase
 	id("com.google.gms.google-services")
 	id("com.google.firebase.crashlytics")
@@ -8,6 +9,7 @@ plugins {
 
 android {
 	buildFeatures {
+		compose = true
 		buildConfig = true
 	}
 
@@ -63,7 +65,17 @@ dependencies {
 	implementation("com.google.code.gson:gson:2.13.1")
 
 	// remove if you don't want firebase
-	implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+	implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
 	implementation("com.google.firebase:firebase-crashlytics")
 	implementation("com.google.firebase:firebase-analytics")
+
+
+	// Core Compose libraries
+	implementation(platform("androidx.compose:compose-bom:2025.07.00"))
+	implementation("androidx.activity:activity-compose")
+	implementation("androidx.compose.ui:ui")
+	implementation("androidx.compose.ui:ui-tooling-preview")
+	implementation("androidx.compose.material3:material3")
+	debugImplementation("androidx.compose.ui:ui-tooling")
+	debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

@@ -53,7 +53,7 @@ import java.util.Calendar
 import java.util.zip.ZipException
 import kotlin.io.path.createDirectory
 
-const val PACKAGE_TO_PATCH = "com.spotify.music"
+const val PACKAGE_TO_PATCH = "com.google.android.apps.youtube.music"
 private const val TEMP_FOLDER = "temp"
 
 class MainActivity : AppCompatActivity(), LogListener {
