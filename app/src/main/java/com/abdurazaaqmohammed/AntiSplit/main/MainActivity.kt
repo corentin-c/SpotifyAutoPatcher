@@ -8,21 +8,18 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.NameNotFoundException
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowManager
-import android.widget.FrameLayout
-import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -33,18 +30,16 @@ import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.AppUpdater
-import com.corentinc.patcher.ReVancedPatcher.patch
 import com.corentinc.patcher.clearDirectory
-import com.corentinc.patcher.copyUriToFile
 import com.corentinc.patcher.isNetworkException
 import com.corentinc.patcher.saveToDownloadsFolder
+import com.corentinc.screens.patcher.ui.AutoPatcherScreen
 import com.github.corentinc.SpotifyAutoPatcher.R
+import com.github.corentinc.httpcodescats.ui.theme.AutoPatcherTheme
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.reandroid.apk.ApkBundle
 import com.reandroid.apkeditor.merge.LogUtil
-import com.reandroid.apkeditor.merge.Merger
 import com.reandroid.apkeditor.merge.Merger.LogListener
-import kotlinx.coroutines.CoroutineExceptionHandler
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -56,6 +51,7 @@ import kotlin.io.path.createDirectory
 const val PACKAGE_TO_PATCH = "com.google.android.apps.youtube.music"
 private const val TEMP_FOLDER = "temp"
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), LogListener {
 	private lateinit var defaultFolder: File
 
@@ -88,6 +84,8 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		enableEdgeToEdge()
+
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(
 				this,
 				Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -95,14 +93,40 @@ class MainActivity : AppCompatActivity(), LogListener {
 		) {
 			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 		}
+		setContent {
+			AutoPatcherTheme {
+				AutoPatcherScreen(
+					title = getString(R.string.app_name),
+					onCopyClick = { text ->
+						copyText(
+							text
+						)
+					},
+					onInstallClick = { patch ->
+						patch?.let {
+							patchedApk = patch
+							installAppOrShowPopUpIfAlreadyInstalled(patch)
+						}
+					},
+					onCancelClick = {
+						restartActivity()
+					},
+					onDownloadClick = { patch ->
+						patch?.let {
+							patchedApk = patch
+							installAppOrShowPopUpIfAlreadyInstalled(patch)
+						}
+					},
+					defaultFolder = defaultFolder
+				)
+			}
+		}
+
 		defaultFolder = File(cacheDir, TEMP_FOLDER)
 		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
 		defaultFolder.clearDirectory()
 		WindowCompat.setDecorFitsSystemWindows(window, false)
-		setContentView(R.layout.activity_main)
-		scrollView = findViewById(R.id.scrollView)
-		logField = findViewById(R.id.logField)
-		LogUtil.setLogListener(this)
+
 		LogUtil.logEnabled = true
 
 		lifecycleScope.launch(Dispatchers.IO) {
@@ -184,8 +208,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		val w = ad.window
 		if (w != null) {
 			val border = GradientDrawable()
-			val background: Drawable = findViewById<FrameLayout>(R.id.main).background
-			border.setColor((background as ColorDrawable).color) // Background color
 			val typedValue = TypedValue()
 			theme.resolveAttribute(android.R.attr.colorPrimary, typedValue, true)
 			border.setStroke(5, typedValue.data) // Border width and color
@@ -212,66 +234,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 		window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 	}
 
-	override fun onLog(msg: CharSequence) {
-		onLog(msg.toString())
-	}
-
-	override fun onLog(log: String) {
-		Log.i("", log)
-		runOnUiThread {
-			logField!!.append(StringBuilder(log).append('\n'))
-			scrollView!!.post { scrollView!!.fullScroll(View.FOCUS_DOWN) }
-		}
-	}
-
-	override fun onLog(resID: Int) {
-		onLog(this.getString(resID))
-	}
-
-	private fun mergeAndPatchApk() {
-		onLog("Merging APK...")
-		findViewById<View>(R.id.installButton).visibility =
-			View.GONE
-		val fabs = findViewById<LinearLayout>(R.id.fabs)
-		fabs.alpha = 0.5f
-		val cancelButton = findViewById<View>(R.id.cancelButton)
-		cancelButton.visibility = View.VISIBLE
-		cancelButton.setOnClickListener {
-			restartActivity()
-		}
-
-		val copyButton = findViewById<View>(R.id.copyButton)
-		copyButton.visibility = View.VISIBLE
-		copyButton.setOnClickListener {
-			copyText(
-				StringBuilder().append(
-					logField!!.text
-				)
-			)
-		}
-		val coroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
-			showError(e)
-		}
-		lifecycleScope.launch(Dispatchers.Default + coroutineExceptionHandler) {
-			try {
-				val bundle = ApkBundle()
-				bundle.loadApkDirectory(
-					File(
-						packageManager.getPackageInfo(
-							PACKAGE_TO_PATCH, 0
-						).applicationInfo!!.sourceDir
-					).parentFile, false, this@MainActivity
-				)
-				val uri = File(defaultFolder, "mergingResult.apk").toUri()
-				Merger.run(bundle, defaultFolder, uri, this@MainActivity)
-				val apk = File(defaultFolder, "unpatched.apk")
-				apk.copyUriToFile(this@MainActivity, uri)
-				startPatching(apk)
-			} catch (exception: Exception) {
-				showError(exception)
-			}
-		}
-	}
 
 	private fun saveApk(apk: File) {
 		apk.saveToDownloadsFolder(
@@ -335,41 +297,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 	}
 
 	private var patchedApk: File? = null
-	private suspend fun startPatching(file: File) {
-		onLog(getString(R.string.merging_apk_succeeded))
-
-		val installButton = findViewById<View>(R.id.installButton)
-		val success = this.getString(R.string.success_saved)
-		LogUtil.logMessage(success)
-		val patch = patch(
-			applicationContext, file, defaultFolder,
-			this@MainActivity
-		)
-		patchedApk = patch
-		runOnUiThread {
-			installButton.setOnClickListener {
-				installAppOrShowPopUpIfAlreadyInstalled(patch)
-			}
-			installButton.visibility = View.VISIBLE
-			onLog(getString(R.string.ready_to_install))
-			findViewById<View>(R.id.cancelButton).visibility =
-				View.GONE
-
-			val downloadButton = findViewById<View>(R.id.downloadButton)
-			downloadButton.setOnClickListener {
-				saveApk(patch)
-			}
-			downloadButton.visibility = View.VISIBLE
-
-			showAlertDialog(
-				getString(R.string.ready_to_install),
-				positiveButtonText = getString(R.string.next),
-				positiveButtonAction = {
-					AppInstaller.uninstallApp(uninstallCallback)
-				},
-			)
-		}
-	}
 
 	private fun copyText(text: CharSequence) {
 		(getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(

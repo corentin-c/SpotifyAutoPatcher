@@ -5,6 +5,8 @@ plugins {
 	// remove if you don't want firebase
 	id("com.google.gms.google-services")
 	id("com.google.firebase.crashlytics")
+	id("com.google.devtools.ksp")
+	id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -51,9 +53,6 @@ android {
 		// Disables dependency metadata when building Android App Bundles.
 		includeInBundle = false
 	}
-	kotlinOptions {
-		jvmTarget = "21"
-	}
 }
 dependencies {
 	implementation("androidx.core:core-ktx:1.16.0")
@@ -76,6 +75,11 @@ dependencies {
 	implementation("androidx.compose.ui:ui")
 	implementation("androidx.compose.ui:ui-tooling-preview")
 	implementation("androidx.compose.material3:material3")
+	implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 	debugImplementation("androidx.compose.ui:ui-tooling")
 	debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+	// Hilt
+	implementation("com.google.dagger:hilt-android:2.57")
+	ksp("com.google.dagger:hilt-compiler:2.57")
 }
