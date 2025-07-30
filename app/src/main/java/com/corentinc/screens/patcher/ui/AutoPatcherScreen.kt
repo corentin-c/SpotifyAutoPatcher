@@ -18,6 +18,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +42,7 @@ fun AutoPatcherScreen(
 	onInstallClick: (File?) -> Unit = {},
 	onDownloadClick: (File?) -> Unit = {},
 	onCancelClick: () -> Unit = {},
+	onPatchingFinished: () -> Unit = {},
 	onError: (error: Throwable) -> Unit = {},
 	defaultFolder: File,
 	viewModel: PatcherViewModel = hiltViewModel()
@@ -50,6 +52,16 @@ fun AutoPatcherScreen(
 
 	LaunchedEffect(Unit) {
 		viewModel.onStart(defaultFolder)
+	}
+
+	if (uiState.isPatchingFinished) {
+		onPatchingFinished()
+		viewModel.onPatchingFinishedHandled()
+	}
+
+	if (uiState.error != null) {
+		onError(uiState.error!!)
+		viewModel.onErrorHandled()
 	}
 
 	AutoPatcherScreenContent(
@@ -87,100 +99,102 @@ fun AutoPatcherScreenContent(
 	onDownloadClick: () -> Unit = {},
 	onCancelClick: () -> Unit = {}
 ) {
-	Box(
-		modifier = modifier
-			.fillMaxSize()
-			.background(MaterialTheme.colorScheme.background) // or windowBackground equivalent
-			.systemBarsPadding()
-	) {
-		Column(
-			modifier = Modifier
+	Surface(color = MaterialTheme.colorScheme.surface) {
+		Box(
+			modifier = modifier
 				.fillMaxSize()
-				.padding(top = 50.dp)
+				.background(MaterialTheme.colorScheme.surface) // or windowBackground equivalent
+				.systemBarsPadding()
 		) {
-			// Scrollable content
 			Column(
 				modifier = Modifier
-					.weight(1f)
-					.verticalScroll(rememberScrollState())
-					.padding(16.dp)
+					.fillMaxSize()
+					.padding(top = 50.dp)
 			) {
-				Text(
-					text = title,
-					style = MaterialTheme.typography.headlineMedium,
-					modifier = Modifier.fillMaxWidth(),
-					softWrap = true
-				)
+				// Scrollable content
+				Column(
+					modifier = Modifier
+						.weight(1f)
+						.verticalScroll(rememberScrollState())
+						.padding(16.dp)
+				) {
+					Text(
+						text = title,
+						style = MaterialTheme.typography.headlineMedium,
+						modifier = Modifier.fillMaxWidth(),
+						softWrap = true
+					)
 
-				Spacer(modifier = Modifier.height(8.dp))
+					Spacer(modifier = Modifier.height(8.dp))
 
-				Text(
-					text = logText,
-					style = MaterialTheme.typography.bodyMedium,
-					modifier = Modifier.fillMaxWidth(),
-					softWrap = true
-				)
-			}
-		}
-
-		// Floating action buttons
-		Column(
-			modifier = Modifier
-				.align(Alignment.BottomEnd)
-				.padding(16.dp),
-			verticalArrangement = Arrangement.spacedBy(5.dp)
-		) {
-			if (isCopyButtonVisible) {
-				FloatingActionButton(
-					onClick = onCopyClick,
-					modifier = Modifier,
-					elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-					content = {
-						Icon(
-							painter = painterResource(R.drawable.copy),
-							contentDescription = stringResource(R.string.copy_log)
-						)
-					}
-				)
+					Text(
+						text = logText,
+						style = MaterialTheme.typography.bodyMedium,
+						modifier = Modifier.fillMaxWidth(),
+						softWrap = true
+					)
+				}
 			}
 
-			if (isInstallButtonVisible) {
-				FloatingActionButton(
-					onClick = onInstallClick,
-					elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-					content = {
-						Icon(
-							painter = painterResource(R.drawable.open_in_new),
-							contentDescription = stringResource(R.string.install)
-						)
-					}
-				)
-			}
+			// Floating action buttons
+			Column(
+				modifier = Modifier
+					.align(Alignment.BottomEnd)
+					.padding(16.dp),
+				verticalArrangement = Arrangement.spacedBy(5.dp)
+			) {
+				if (isCopyButtonVisible) {
+					FloatingActionButton(
+						onClick = onCopyClick,
+						modifier = Modifier,
+						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+						content = {
+							Icon(
+								painter = painterResource(R.drawable.copy),
+								contentDescription = stringResource(R.string.copy_log)
+							)
+						}
+					)
+				}
 
-			if (isSaveButtonVisible) {
-				FloatingActionButton(
-					onClick = onDownloadClick,
-					elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-					content = {
-						Icon(
-							painter = painterResource(android.R.drawable.ic_menu_save),
-							contentDescription = stringResource(R.string.app_name)
-						)
-					}
-				)
-			}
+				if (isInstallButtonVisible) {
+					FloatingActionButton(
+						onClick = onInstallClick,
+						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+						content = {
+							Icon(
+								painter = painterResource(R.drawable.open_in_new),
+								contentDescription = stringResource(R.string.install)
+							)
+						}
+					)
+				}
 
-			if (isCancelButtonVisible) {
-				FloatingActionButton(
-					onClick = onCancelClick,
-					elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-					content = {
-						Icon(
-							imageVector = Icons.Default.Close, // or use painterResource
-							contentDescription = stringResource(R.string.cancel)
-						)
-					}
-				)
+				if (isSaveButtonVisible) {
+					FloatingActionButton(
+						onClick = onDownloadClick,
+						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+						content = {
+							Icon(
+								painter = painterResource(android.R.drawable.ic_menu_save),
+								contentDescription = stringResource(R.string.app_name)
+							)
+						}
+					)
+				}
+
+				if (isCancelButtonVisible) {
+					FloatingActionButton(
+						onClick = onCancelClick,
+						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+						content = {
+							Icon(
+								imageVector = Icons.Default.Close, // or use painterResource
+								contentDescription = stringResource(R.string.cancel)
+							)
+						}
+					)
+				}
 			}
 		}
 	}

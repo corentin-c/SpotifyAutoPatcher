@@ -26,7 +26,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
-import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.AppUpdater
@@ -38,7 +37,6 @@ import com.github.corentinc.SpotifyAutoPatcher.R
 import com.github.corentinc.httpcodescats.ui.theme.AutoPatcherTheme
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.reandroid.apkeditor.merge.LogUtil
-import com.reandroid.apkeditor.merge.Merger.LogListener
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,7 +50,7 @@ const val PACKAGE_TO_PATCH = "com.google.android.apps.youtube.music"
 private const val TEMP_FOLDER = "temp"
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), LogListener {
+class MainActivity : AppCompatActivity() {
 	private lateinit var defaultFolder: File
 
 	private val requestWritePermissionLauncher = registerForActivityResult(
@@ -80,7 +78,6 @@ class MainActivity : AppCompatActivity(), LogListener {
 
 
 	private var logField: TextView? = null
-	private var scrollView: NestedScrollView? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -97,6 +94,15 @@ class MainActivity : AppCompatActivity(), LogListener {
 			AutoPatcherTheme {
 				AutoPatcherScreen(
 					title = getString(R.string.app_name),
+					onPatchingFinished = {
+						showAlertDialog(
+							getString(R.string.ready_to_install),
+							positiveButtonText = getString(R.string.next),
+							positiveButtonAction = {
+								AppInstaller.uninstallApp(uninstallCallback)
+							},
+						)
+					},
 					onCopyClick = { text ->
 						copyText(
 							text
@@ -116,6 +122,9 @@ class MainActivity : AppCompatActivity(), LogListener {
 							patchedApk = patch
 							installAppOrShowPopUpIfAlreadyInstalled(patch)
 						}
+					},
+					onError = { error ->
+						showError(error)
 					},
 					defaultFolder = defaultFolder
 				)
@@ -168,7 +177,7 @@ class MainActivity : AppCompatActivity(), LogListener {
 			getString(R.string.before_start_message),
 			positiveButtonText = getString(R.string.start),
 			positiveButtonAction = {
-				mergeAndPatchApk()
+				//mergeAndPatchApk()
 			},
 		)
 	}

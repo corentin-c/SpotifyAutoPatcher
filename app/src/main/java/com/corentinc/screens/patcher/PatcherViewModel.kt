@@ -6,7 +6,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abdurazaaqmohammed.AntiSplit.main.PACKAGE_TO_PATCH
-import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.ReVancedPatcher.patch
 import com.corentinc.patcher.copyUriToFile
 import com.github.corentinc.SpotifyAutoPatcher.R
@@ -70,7 +69,7 @@ class PatcherViewModel @Inject constructor(
 				val bundle = ApkBundle()
 				bundle.loadApkDirectory(
 					File(
-						packageManager.getPackageInfo(
+						context.packageManager.getPackageInfo(
 							PACKAGE_TO_PATCH, 0
 						).applicationInfo!!.sourceDir
 					).parentFile, false, context
@@ -101,17 +100,26 @@ class PatcherViewModel @Inject constructor(
 			state.copy(
 				patchedApk = patch,
 				isInstallButtonVisible = true,
-				isSaveButtonVisible = true
+				isSaveButtonVisible = true,
+				isPatchingFinished = true
 			)
 		}
+	}
 
-		showAlertDialog(
-			getString(R.string.ready_to_install),
-			positiveButtonText = getString(R.string.next),
-			positiveButtonAction = {
-				AppInstaller.uninstallApp(uninstallCallback)
-			},
-		)
+	fun onPatchingFinishedHandled() {
+		uiStateFlow.update { state ->
+			state.copy(
+				isPatchingFinished = false
+			)
+		}
+	}
+
+	fun onErrorHandled() {
+		uiStateFlow.update { state ->
+			state.copy(
+				error = null
+			)
+		}
 	}
 
 	private val uiStateFlow = MutableStateFlow(UiState())
@@ -124,6 +132,7 @@ class PatcherViewModel @Inject constructor(
 		var isCancelButtonVisible: Boolean = false,
 		var logText: String = "",
 		var error: Throwable? = null,
-		var patchedApk: File? = null
+		var patchedApk: File? = null,
+		var isPatchingFinished: Boolean = false
 	)
 }

@@ -13,6 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:name="com.corentinc.screens.AutoPatcherApplication"
         android:largeHeap="true">
         <activity
             android:name="com.abdurazaaqmohammed.AntiSplit.main.MainActivity"
