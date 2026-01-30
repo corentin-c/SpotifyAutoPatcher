@@ -36,6 +36,14 @@ class PatcherViewModel @Inject constructor(
 		mergeAndPatchApk(defaultFolder, packageName)
 	}
 
+	fun onAlertDialogHandled() {
+		uiStateFlow.update { state ->
+			state.copy(
+				shouldShowStartProcessingDialog = false
+			)
+		}
+	}
+
 	override fun onLog(msg: CharSequence) {
 		onLog(msg.toString())
 	}
@@ -43,7 +51,7 @@ class PatcherViewModel @Inject constructor(
 	override fun onLog(log: String) {
 		Log.i("", log)
 		uiStateFlow.update { state ->
-			state.copy(logText = state.logText + log + "\n")
+			state.copy(logText = log + state.logText +"\n")
 		}
 	}
 

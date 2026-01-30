@@ -123,8 +123,12 @@ class MainActivity : AppCompatActivity() {
 					packageToPatch = applicationChosen.packageName
 					applicationNameToPatch = applicationChosen.nameToDisplay
 					AutoPatcherScreen(
-						title = getString(R.string.app_name, applicationNameToPatch),
-						onPatchingFinished = {
+						title = getString(R.string.app_name),
+						onPatchingFinished = { patch ->
+							patch?.let {
+								patchedApk = patch
+								installAppOrShowPopUpIfAlreadyInstalled(patch)
+							}
 							showAlertDialog(
 								getString(R.string.ready_to_install, applicationNameToPatch, applicationNameToPatch),
 								positiveButtonText = getString(R.string.next),
@@ -222,9 +226,15 @@ class MainActivity : AppCompatActivity() {
 				title = null,
 				text = text,
 				positiveButtonText = positiveButtonText,
-				positiveButtonAction = positiveButtonAction,
+				positiveButtonAction = {
+					positiveButtonAction()
+					viewModel.onAlertDialogDismissed()
+				},
 				neutralButtonText = neutralButtonText,
-				neutralButtonAction = neutralButtonAction
+				neutralButtonAction = {
+					neutralButtonAction?.invoke()
+					viewModel.onAlertDialogDismissed()
+				}
 			)
 		)
 	}

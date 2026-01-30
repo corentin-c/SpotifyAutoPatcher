@@ -41,7 +41,7 @@ fun AutoPatcherScreen(
 	onInstallClick: (File?) -> Unit = {},
 	onDownloadClick: (File?) -> Unit = {},
 	onCancelClick: () -> Unit = {},
-	onPatchingFinished: () -> Unit = {},
+	onPatchingFinished: (File?) -> Unit = {},
 	onError: (error: Throwable) -> Unit = {},
 	defaultFolder: File,
 	applicationChosen: ApplicationSupported,
@@ -50,7 +50,7 @@ fun AutoPatcherScreen(
 
 	val uiState = viewModel.uiState.collectAsState().value
 	if (uiState.isPatchingFinished) {
-		onPatchingFinished()
+		onPatchingFinished(uiState.patchedApk)
 		viewModel.onPatchingFinishedHandled()
 	}
 
@@ -61,10 +61,14 @@ fun AutoPatcherScreen(
 
 	if (uiState.shouldShowStartProcessingDialog) {
 		OptionsAlertDialog(
-			dialogText = stringResource(R.string.before_start_message, applicationChosen.nameToDisplay),
+			dialogText = stringResource(
+				R.string.before_start_message,
+				applicationChosen.nameToDisplay
+			),
 			firstOptionText = stringResource(R.string.start),
 			firstOptionAction = {
 				viewModel.onStart(defaultFolder, applicationChosen.packageName)
+				viewModel.onAlertDialogHandled()
 			},
 		)
 	}
