@@ -77,7 +77,7 @@ fun AutoPatcherScreen(
 		logText = uiState.logText,
 		isCopyButtonVisible = uiState.isCopyButtonVisible,
 		isInstallButtonVisible = uiState.isInstallButtonVisible,
-		isSaveButtonVisible = uiState.isCancelButtonVisible,
+		isSaveButtonVisible = uiState.isSaveButtonVisible,
 		isCancelButtonVisible = uiState.isCancelButtonVisible,
 		onInstallClick = {
 			onInstallClick(uiState.patchedApk)
