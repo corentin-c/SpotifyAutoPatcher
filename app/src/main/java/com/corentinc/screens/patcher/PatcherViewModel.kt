@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.abdurazaaqmohammed.AntiSplit.main.PACKAGE_TO_PATCH
+import com.abdurazaaqmohammed.AntiSplit.main.mainActivity.PACKAGE_TO_PATCH
 import com.corentinc.patcher.ReVancedPatcher.patch
 import com.corentinc.patcher.copyUriToFile
 import com.github.corentinc.SpotifyAutoPatcher.R
@@ -124,6 +124,8 @@ class PatcherViewModel @Inject constructor(
 			)
 		}
 	}
+
+
 
 	private val uiStateFlow = MutableStateFlow(UiState())
 	val uiState: StateFlow<UiState> = uiStateFlow.asStateFlow()

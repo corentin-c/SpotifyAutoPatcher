@@ -6,7 +6,7 @@ import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.Patcher
 import app.revanced.patcher.PatcherConfig
 import app.revanced.patcher.patch.loadPatchesFromDex
-import com.abdurazaaqmohammed.AntiSplit.main.PACKAGE_TO_PATCH
+import com.abdurazaaqmohammed.AntiSplit.main.mainActivity.PACKAGE_TO_PATCH
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken

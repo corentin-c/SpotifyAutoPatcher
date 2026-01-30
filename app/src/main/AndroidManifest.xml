@@ -16,7 +16,7 @@
         android:name="com.corentinc.screens.AutoPatcherApplication"
         android:largeHeap="true">
         <activity
-            android:name="com.abdurazaaqmohammed.AntiSplit.main.MainActivity"
+            android:name="com.abdurazaaqmohammed.AntiSplit.main.mainActivity.MainActivity"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar"
             android:exported="true"
             android:configChanges="uiMode|screenSize|orientation">

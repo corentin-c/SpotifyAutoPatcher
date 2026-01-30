@@ -1,4 +1,4 @@
-package com.abdurazaaqmohammed.AntiSplit.main
+package com.abdurazaaqmohammed.AntiSplit.main.mainActivity
 
 import android.Manifest
 import android.app.ActivityManager
@@ -21,8 +21,10 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
@@ -32,7 +34,9 @@ import com.corentinc.patcher.AppUpdater
 import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.isNetworkException
 import com.corentinc.patcher.saveToDownloadsFolder
+import com.corentinc.screens.patcher.ui.AlertDialogData
 import com.corentinc.screens.patcher.ui.AutoPatcherScreen
+import com.corentinc.screens.patcher.ui.OptionsAlertDialog
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.github.corentinc.httpcodescats.ui.theme.AutoPatcherTheme
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -52,6 +56,8 @@ private const val TEMP_FOLDER = "temp"
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 	private lateinit var defaultFolder: File
+
+	private val viewModel: MainActivityViewModel by viewModels()
 
 	private val requestWritePermissionLauncher = registerForActivityResult(
 		ActivityResultContracts.RequestPermission()
@@ -91,6 +97,23 @@ class MainActivity : AppCompatActivity() {
 			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 		}
 		setContent {
+			val uiState = viewModel.uiState.collectAsState().value
+
+			uiState.alertDialogData?.let { alertDialogData ->
+				OptionsAlertDialog(
+					dialogTitle = alertDialogData.title,
+					dialogText = alertDialogData.text,
+					extraContent = null,
+					onDismissRequest = {
+						viewModel.onAlertDialogDismissed()
+					},
+					firstOptionText = alertDialogData.positiveButtonText,
+					firstOptionAction = alertDialogData.positiveButtonAction,
+					secondOptionText = alertDialogData.neutralButtonText,
+					secondOptionAction = alertDialogData.neutralButtonAction,
+				)
+			}
+
 			AutoPatcherTheme {
 				AutoPatcherScreen(
 					title = getString(R.string.app_name),
@@ -176,28 +199,16 @@ class MainActivity : AppCompatActivity() {
 		neutralButtonText: String? = null,
 		neutralButtonAction: (() -> Unit)? = null,
 	) {
-		runOnUiThread {
-			val builder = MaterialAlertDialogBuilder(this)
-			builder.setCancelable(false)
-			builder.setMessage(text)
-			builder.setPositiveButton(
-				positiveButtonText
-			) { dialog: DialogInterface, _: Int ->
-				positiveButtonAction()
-				dialog.dismiss()
-			}
-			neutralButtonText?.let {
-				neutralButtonAction?.let {
-					builder.setNeutralButton(
-						neutralButtonText
-					) { dialog: DialogInterface, _: Int ->
-						neutralButtonAction()
-						dialog.dismiss()
-					}
-				}
-			}
-			styleAlertDialog(builder.create())
-		}
+		viewModel.displayAlertDialog(
+			AlertDialogData(
+				title = null,
+				text = text,
+				positiveButtonText = positiveButtonText,
+				positiveButtonAction = positiveButtonAction,
+				neutralButtonText = neutralButtonText,
+				neutralButtonAction = neutralButtonAction
+			)
+		)
 	}
 
 	private fun styleAlertDialog(ad: AlertDialog) {
