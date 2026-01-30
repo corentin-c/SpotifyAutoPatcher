@@ -1,6 +1,5 @@
-package com.corentinc.screens.patcher.ui
+package com.corentinc.screens.patcher.ui.autoPatcher
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.corentinc.screens.patcher.PatcherViewModel
+import com.corentinc.patcher.ApplicationSupported
+import com.corentinc.screens.patcher.ui.OptionsAlertDialog
 import com.github.corentinc.SpotifyAutoPatcher.R
 import java.io.File
 
@@ -44,6 +44,7 @@ fun AutoPatcherScreen(
 	onPatchingFinished: () -> Unit = {},
 	onError: (error: Throwable) -> Unit = {},
 	defaultFolder: File,
+	applicationChosen: ApplicationSupported,
 	viewModel: PatcherViewModel = hiltViewModel()
 ) {
 
@@ -60,10 +61,10 @@ fun AutoPatcherScreen(
 
 	if (uiState.shouldShowStartProcessingDialog) {
 		OptionsAlertDialog(
-			dialogText = stringResource(R.string.before_start_message),
+			dialogText = stringResource(R.string.before_start_message, applicationChosen.nameToDisplay),
 			firstOptionText = stringResource(R.string.start),
 			firstOptionAction = {
-				viewModel.onStart(defaultFolder)
+				viewModel.onStart(defaultFolder, applicationChosen.packageName)
 			},
 		)
 	}
@@ -103,11 +104,10 @@ fun AutoPatcherScreenContent(
 	onDownloadClick: () -> Unit = {},
 	onCancelClick: () -> Unit = {}
 ) {
-	Surface(color = MaterialTheme.colorScheme.surface) {
+	Surface {
 		Box(
 			modifier = modifier
 				.fillMaxSize()
-				.background(MaterialTheme.colorScheme.surface) // or windowBackground equivalent
 				.systemBarsPadding()
 		) {
 			Column(

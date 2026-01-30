@@ -31,12 +31,15 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.AppUpdater
+import com.corentinc.patcher.ApplicationSupported.SPOTIFY
+import com.corentinc.patcher.ApplicationSupported.YOUTUBE_MUSIC
 import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.isNetworkException
 import com.corentinc.patcher.saveToDownloadsFolder
 import com.corentinc.screens.patcher.ui.AlertDialogData
-import com.corentinc.screens.patcher.ui.AutoPatcherScreen
 import com.corentinc.screens.patcher.ui.OptionsAlertDialog
+import com.corentinc.screens.patcher.ui.autoPatcher.AutoPatcherScreen
+import com.corentinc.screens.patcher.ui.choice.ApplicationChoice
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.github.corentinc.httpcodescats.ui.theme.AutoPatcherTheme
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -50,12 +53,13 @@ import java.util.Calendar
 import java.util.zip.ZipException
 import kotlin.io.path.createDirectory
 
-const val PACKAGE_TO_PATCH = "com.google.android.apps.youtube.music"
 private const val TEMP_FOLDER = "temp"
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 	private lateinit var defaultFolder: File
+	lateinit var packageToPatch: String
+	lateinit var applicationNameToPatch: String
 
 	private val viewModel: MainActivityViewModel by viewModels()
 
@@ -115,42 +119,56 @@ class MainActivity : AppCompatActivity() {
 			}
 
 			AutoPatcherTheme {
-				AutoPatcherScreen(
-					title = getString(R.string.app_name),
-					onPatchingFinished = {
-						showAlertDialog(
-							getString(R.string.ready_to_install),
-							positiveButtonText = getString(R.string.next),
-							positiveButtonAction = {
-								AppInstaller.uninstallApp(uninstallCallback)
-							},
-						)
-					},
-					onCopyClick = { text ->
-						copyText(
-							text
-						)
-					},
-					onInstallClick = { patch ->
-						patch?.let {
-							patchedApk = patch
-							installAppOrShowPopUpIfAlreadyInstalled(patch)
+				uiState.applicationChosen?.let { applicationChosen ->
+					packageToPatch = applicationChosen.packageName
+					applicationNameToPatch = applicationChosen.nameToDisplay
+					AutoPatcherScreen(
+						title = getString(R.string.app_name, applicationNameToPatch),
+						onPatchingFinished = {
+							showAlertDialog(
+								getString(R.string.ready_to_install, applicationNameToPatch, applicationNameToPatch),
+								positiveButtonText = getString(R.string.next),
+								positiveButtonAction = {
+									AppInstaller.uninstallApp(uninstallCallback, packageToPatch)
+								},
+							)
+						},
+						onCopyClick = { text ->
+							copyText(
+								text
+							)
+						},
+						onInstallClick = { patch ->
+							patch?.let {
+								patchedApk = patch
+								installAppOrShowPopUpIfAlreadyInstalled(patch)
+							}
+						},
+						onCancelClick = {
+							restartActivity()
+						},
+						onDownloadClick = { patch ->
+							patch?.let {
+								patchedApk = patch
+								saveApk(patch)
+							}
+						},
+						onError = { error ->
+							showError(error)
+						},
+						defaultFolder = defaultFolder,
+						applicationChosen = applicationChosen
+					)
+				} ?: run {
+					ApplicationChoice(
+						onSpotifyClick = {
+							viewModel.onApplicationChosen(SPOTIFY)
+						},
+						onYoutubeMusicClick = {
+							viewModel.onApplicationChosen(YOUTUBE_MUSIC)
 						}
-					},
-					onCancelClick = {
-						restartActivity()
-					},
-					onDownloadClick = { patch ->
-						patch?.let {
-							patchedApk = patch
-							saveApk(patch)
-						}
-					},
-					onError = { error ->
-						showError(error)
-					},
-					defaultFolder = defaultFolder
-				)
+					)
+				}
 			}
 		}
 
@@ -286,10 +304,10 @@ class MainActivity : AppCompatActivity() {
 	private fun installAppOrShowPopUpIfAlreadyInstalled(patchedApk: File) {
 		try {
 			this@MainActivity.packageManager.getPackageInfo(
-				PACKAGE_TO_PATCH, 0
+				packageToPatch, 0
 			).applicationInfo!!.sourceDir
 			showAlertDialog(
-				getString(R.string.spotify_detected_before_install),
+				getString(R.string.spotify_detected_before_install, applicationNameToPatch),
 				positiveButtonText = getString(R.string.ok),
 				positiveButtonAction = {
 					// empty
@@ -299,7 +317,7 @@ class MainActivity : AppCompatActivity() {
 					AppInstaller.installApp(this, patchedApk)
 				}
 			)
-		} catch (exception: NameNotFoundException) {
+		} catch (_: NameNotFoundException) {
 			AppInstaller.installApp(this, patchedApk)
 		}
 	}
@@ -333,7 +351,7 @@ class MainActivity : AppCompatActivity() {
 
 			error is NameNotFoundException -> {
 				showAlertDialog(
-					getString(R.string.app_not_found_error),
+					getString(R.string.app_not_found_error, applicationNameToPatch, applicationNameToPatch),
 					positiveButtonText = getString(R.string.retry),
 					positiveButtonAction = {
 						restartActivity()
@@ -377,7 +395,7 @@ class MainActivity : AppCompatActivity() {
 						stackTrace
 
 					styleAlertDialog(
-						MaterialAlertDialogBuilder(this, )
+						MaterialAlertDialogBuilder(this)
 							.setTitle(mainErr)
 							.setCancelable(false)
 							.setView(dialogView)

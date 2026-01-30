@@ -1,6 +1,7 @@
 package com.abdurazaaqmohammed.AntiSplit.main.mainActivity
 
 import androidx.lifecycle.ViewModel
+import com.corentinc.patcher.ApplicationSupported
 import com.corentinc.screens.patcher.ui.AlertDialogData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +31,16 @@ class MainActivityViewModel @Inject constructor() : ViewModel() {
 		}
 	}
 
+	fun onApplicationChosen(applicationChosen: ApplicationSupported) {
+		uiStateFlow.update { state ->
+			state.copy(
+				applicationChosen = applicationChosen
+			)
+		}
+	}
+
 	data class UiState(
 		var alertDialogData: AlertDialogData? = null,
+		var applicationChosen: ApplicationSupported? = null
 	)
 }

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.support.v4.content.FileProvider
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
-import com.abdurazaaqmohammed.AntiSplit.main.mainActivity.PACKAGE_TO_PATCH
 import java.io.File
 
 private const val FILE_PROVIDER_NAME = "com.github.corentinc.SpotifyAutoPatcher.provider"
@@ -26,8 +25,8 @@ object AppInstaller {
 		)
 	}
 
-	fun uninstallApp(uninstallCallback: ActivityResultLauncher<Intent>) {
-		val uri = "package:$PACKAGE_TO_PATCH".toUri()
+	fun uninstallApp(uninstallCallback: ActivityResultLauncher<Intent>, packageName: String) {
+		val uri = "package:$packageName".toUri()
 		uninstallCallback.launch(
 			Intent(Intent.ACTION_UNINSTALL_PACKAGE, uri)
 				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

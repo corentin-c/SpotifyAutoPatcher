@@ -1,11 +1,10 @@
-package com.corentinc.screens.patcher
+package com.corentinc.screens.patcher.ui.autoPatcher
 
 import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.abdurazaaqmohammed.AntiSplit.main.mainActivity.PACKAGE_TO_PATCH
 import com.corentinc.patcher.ReVancedPatcher.patch
 import com.corentinc.patcher.copyUriToFile
 import com.github.corentinc.SpotifyAutoPatcher.R
@@ -29,12 +28,12 @@ import javax.inject.Inject
 class PatcherViewModel @Inject constructor(
 	@param:ApplicationContext private val context: Context,
 ) : ViewModel(), LogListener {
-	fun onStart(defaultFolder: File) {
+	fun onStart(defaultFolder: File, packageName: String) {
 		uiStateFlow.update { state ->
 			state.copy(shouldShowStartProcessingDialog = false)
 		}
 		LogUtil.setLogListener(this)
-		mergeAndPatchApk(defaultFolder)
+		mergeAndPatchApk(defaultFolder, packageName)
 	}
 
 	override fun onLog(msg: CharSequence) {
@@ -52,7 +51,7 @@ class PatcherViewModel @Inject constructor(
 		onLog(context.getString(resID))
 	}
 
-	private fun mergeAndPatchApk(defaultFolder: File) {
+	private fun mergeAndPatchApk(defaultFolder: File, packageName: String) {
 		onLog("Merging APK...")
 
 		uiStateFlow.update { state ->
@@ -73,7 +72,7 @@ class PatcherViewModel @Inject constructor(
 				bundle.loadApkDirectory(
 					File(
 						context.packageManager.getPackageInfo(
-							PACKAGE_TO_PATCH, 0
+							packageName, 0
 						).applicationInfo!!.sourceDir
 					).parentFile, false, context
 				)
@@ -81,7 +80,7 @@ class PatcherViewModel @Inject constructor(
 				Merger.run(bundle, defaultFolder, uri, context)
 				val apk = File(defaultFolder, "unpatched.apk")
 				apk.copyUriToFile(context, uri)
-				startPatching(apk, defaultFolder)
+				startPatching(apk, defaultFolder, packageName)
 			} catch (exception: Exception) {
 				uiStateFlow.update { state ->
 					state.copy(error = exception)
@@ -90,14 +89,15 @@ class PatcherViewModel @Inject constructor(
 		}
 	}
 
-	private suspend fun startPatching(file: File, defaultFolder: File) {
+	private suspend fun startPatching(file: File, defaultFolder: File, packageName: String) {
 		onLog(context.getString(R.string.merging_apk_succeeded))
 
 		val success = context.getString(R.string.success_saved)
 		LogUtil.logMessage(success)
 		val patch = patch(
 			context, file, defaultFolder,
-			this
+			this,
+			packageName
 		)
 		uiStateFlow.update { state ->
 			state.copy(
