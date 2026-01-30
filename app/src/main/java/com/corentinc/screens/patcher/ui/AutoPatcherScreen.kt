@@ -48,7 +48,6 @@ fun AutoPatcherScreen(
 ) {
 
 	val uiState = viewModel.uiState.collectAsState().value
-
 	if (uiState.isPatchingFinished) {
 		onPatchingFinished()
 		viewModel.onPatchingFinishedHandled()

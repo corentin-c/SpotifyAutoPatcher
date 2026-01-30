@@ -216,7 +216,8 @@ class MainActivity : AppCompatActivity() {
 		if (w != null) {
 			val border = GradientDrawable()
 			val typedValue = TypedValue()
-			theme.resolveAttribute(android.R.attr.colorPrimary, typedValue, true)
+			theme.resolveAttribute(android.R.attr.colorBackgroundFloating, typedValue, true)
+			border.setColor(typedValue.data) // Background color
 			border.setStroke(5, typedValue.data) // Border width and color
 			border.cornerRadius = 24f
 			w.setBackgroundDrawable(border)
@@ -365,7 +366,7 @@ class MainActivity : AppCompatActivity() {
 					.append(this.getString(R.string.app_name)).append(' ')
 				val currentVer = packageManager.getPackageInfo(packageName, 0).versionName
 				fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
-					.append('\n').append(logField!!.text)
+					.append('\n').append(logField?.text)
 
 				runOnUiThread {
 					val dialogView = layoutInflater.inflate(
@@ -376,7 +377,7 @@ class MainActivity : AppCompatActivity() {
 						stackTrace
 
 					styleAlertDialog(
-						MaterialAlertDialogBuilder(this)
+						MaterialAlertDialogBuilder(this, )
 							.setTitle(mainErr)
 							.setCancelable(false)
 							.setView(dialogView)
