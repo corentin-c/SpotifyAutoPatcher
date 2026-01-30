@@ -1,21 +1,20 @@
 package com.corentinc.screens.patcher.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun CustomAlertDialog(
@@ -27,7 +26,6 @@ fun CustomAlertDialog(
 ) {
 	AlertDialog(
 		shape = RoundedCornerShape(0.dp),
-		containerColor = Color.Black,
 		title = {
 			dialogTitle?.let {
 				Text(
@@ -35,11 +33,7 @@ fun CustomAlertDialog(
 						.fillMaxWidth()
 						.padding(vertical = 12.dp),
 					text = it,
-					color = Color.White,
-					style = MaterialTheme.typography.titleSmall,
-					fontSize = 12.sp,
-					fontWeight = FontWeight.Bold,
-					textAlign = TextAlign.Center
+					style = MaterialTheme.typography.titleLarge,
 				)
 			}
 		},
@@ -50,9 +44,7 @@ fun CustomAlertDialog(
 				Text(
 					modifier = Modifier.fillMaxWidth(),
 					text = dialogText,
-					color = Color.White,
-					style = MaterialTheme.typography.labelSmall,
-					textAlign = TextAlign.Left
+					style = MaterialTheme.typography.bodyMedium
 				)
 				extraContent?.invoke()
 			}
@@ -76,7 +68,17 @@ fun CustomAlertDialogPreview() {
 			// empty
 		},
 		buttons = {
-			Text(text = "Button")
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.End
+			) {
+				TextButton(onClick = {}) {
+					Text("Button")
+				}
+				TextButton(onClick = {}) {
+					Text("Button")
+				}
+			}
 		}
 	)
 }

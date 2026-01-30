@@ -27,9 +27,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PatcherViewModel @Inject constructor(
-	@ApplicationContext private val context: Context,
+	@param:ApplicationContext private val context: Context,
 ) : ViewModel(), LogListener {
 	fun onStart(defaultFolder: File) {
+		uiStateFlow.update { state ->
+			state.copy(shouldShowStartProcessingDialog = false)
+		}
 		LogUtil.setLogListener(this)
 		mergeAndPatchApk(defaultFolder)
 	}
@@ -133,6 +136,7 @@ class PatcherViewModel @Inject constructor(
 		var logText: String = "",
 		var error: Throwable? = null,
 		var patchedApk: File? = null,
-		var isPatchingFinished: Boolean = false
+		var isPatchingFinished: Boolean = false,
+		var shouldShowStartProcessingDialog: Boolean = true,
 	)
 }

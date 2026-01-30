@@ -52,7 +52,6 @@ private const val TEMP_FOLDER = "temp"
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 	private lateinit var defaultFolder: File
-	private lateinit var onStartDialogConfirmed: () -> Unit
 
 	private val requestWritePermissionLauncher = registerForActivityResult(
 		ActivityResultContracts.RequestPermission()
@@ -149,18 +148,15 @@ class MainActivity : AppCompatActivity() {
 						positiveButtonText = getString(R.string.install),
 						positiveButtonAction = {
 							AppInstaller.installApp(this@MainActivity, latestVersionApk)
-							showStartProcessDialog()
 
 						},
 						neutralButtonText = getString(R.string.skip),
 						neutralButtonAction = {
-							showStartProcessDialog()
 						}
 					)
 				},
 				onUpdateNotAvailable = {
 					LogUtil.logMessage(getString(R.string.no_update_available))
-					showStartProcessDialog()
 				}).onFailure { exception ->
 				LogUtil.logMessage(
 					getString(
@@ -168,20 +164,10 @@ class MainActivity : AppCompatActivity() {
 						exception
 					)
 				)
-				showStartProcessDialog()
 			}
 		}
 	}
 
-	private fun showStartProcessDialog() {
-		showAlertDialog(
-			getString(R.string.before_start_message),
-			positiveButtonText = getString(R.string.start),
-			positiveButtonAction = {
-				// mergeAndPatchApk()
-			},
-		)
-	}
 
 	private fun showAlertDialog(
 		text: String,

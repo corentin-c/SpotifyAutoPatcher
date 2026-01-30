@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,10 +49,6 @@ fun AutoPatcherScreen(
 
 	val uiState = viewModel.uiState.collectAsState().value
 
-	LaunchedEffect(Unit) {
-		viewModel.onStart(defaultFolder)
-	}
-
 	if (uiState.isPatchingFinished) {
 		onPatchingFinished()
 		viewModel.onPatchingFinishedHandled()
@@ -62,6 +57,16 @@ fun AutoPatcherScreen(
 	if (uiState.error != null) {
 		onError(uiState.error!!)
 		viewModel.onErrorHandled()
+	}
+
+	if (uiState.shouldShowStartProcessingDialog) {
+		OptionsAlertDialog(
+			dialogText = stringResource(R.string.before_start_message),
+			firstOptionText = stringResource(R.string.start),
+			firstOptionAction = {
+				viewModel.onStart(defaultFolder)
+			},
+		)
 	}
 
 	AutoPatcherScreenContent(
