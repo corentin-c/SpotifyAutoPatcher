@@ -1,4 +1,4 @@
-package com.github.corentinc.httpcodescats.ui.theme
+package com.corentinc.screens
 import androidx.compose.ui.graphics.Color
 
 val primaryLight = Color(0xFF723500)

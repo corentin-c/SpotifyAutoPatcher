@@ -15,6 +15,15 @@ android {
 		buildConfig = true
 	}
 
+	android {
+		packaging {
+			jniLibs {
+				useLegacyPackaging = true
+			}
+		}
+	}
+
+
 	namespace = "com.github.corentinc.SpotifyAutoPatcher"
 	compileSdk = 35
 

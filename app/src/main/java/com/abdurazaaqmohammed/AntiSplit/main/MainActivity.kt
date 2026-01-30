@@ -52,6 +52,7 @@ private const val TEMP_FOLDER = "temp"
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 	private lateinit var defaultFolder: File
+	private lateinit var onStartDialogConfirmed: () -> Unit
 
 	private val requestWritePermissionLauncher = registerForActivityResult(
 		ActivityResultContracts.RequestPermission()
@@ -120,7 +121,7 @@ class MainActivity : AppCompatActivity() {
 					onDownloadClick = { patch ->
 						patch?.let {
 							patchedApk = patch
-							installAppOrShowPopUpIfAlreadyInstalled(patch)
+							saveApk(patch)
 						}
 					},
 					onError = { error ->
@@ -177,7 +178,7 @@ class MainActivity : AppCompatActivity() {
 			getString(R.string.before_start_message),
 			positiveButtonText = getString(R.string.start),
 			positiveButtonAction = {
-				//mergeAndPatchApk()
+				// mergeAndPatchApk()
 			},
 		)
 	}
