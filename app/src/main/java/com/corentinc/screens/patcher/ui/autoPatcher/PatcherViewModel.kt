@@ -51,7 +51,7 @@ class PatcherViewModel @Inject constructor(
 	override fun onLog(log: String) {
 		Log.i("", log)
 		uiStateFlow.update { state ->
-			state.copy(logText = log + state.logText +"\n")
+			state.copy(logText = log + "\n" + state.logText)
 		}
 	}
 
