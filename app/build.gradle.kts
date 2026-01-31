@@ -69,7 +69,7 @@ dependencies {
 	implementation("com.google.android.material:material:1.12.0")
 	implementation("app.revanced:revanced-patcher:21.1.0-dev.1")
 	implementation("app.revanced:revanced-library-android:3.2.0-dev.1")
-	implementation("com.github.topjohnwu.libsu:nio:5.2.2")
+	implementation("com.github.topjohnwu.libsu:nio:6.0.0")
 	implementation("com.google.code.gson:gson:2.13.1")
 
 	// remove if you don't want firebase

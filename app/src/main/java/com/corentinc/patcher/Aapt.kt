@@ -9,4 +9,8 @@ object Aapt {
 	}
 }
 
-private fun File.resolveAapt() = resolve(list { _, f -> !File(f).isDirectory && f.contains("aapt") }!!.first())
+private fun File.resolveAapt(): File {
+    val file = resolve(list { _, f -> !File(f).isDirectory && f.contains("aapt") }!!.first())
+    println(file.path)
+    return file
+}
