@@ -24,6 +24,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -31,12 +32,14 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.AppUpdater
+import com.corentinc.patcher.ApplicationSupported
 import com.corentinc.patcher.ApplicationSupported.SPOTIFY
 import com.corentinc.patcher.ApplicationSupported.YOUTUBE_MUSIC
 import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.isNetworkException
 import com.corentinc.patcher.saveToDownloadsFolder
 import com.corentinc.screens.patcher.ui.AlertDialogData
+import com.corentinc.screens.patcher.ui.VerticalGradientBox
 import com.corentinc.screens.patcher.ui.OptionsAlertDialog
 import com.corentinc.screens.patcher.ui.autoPatcher.AutoPatcherScreen
 import com.corentinc.screens.patcher.ui.choice.ApplicationChoice
@@ -57,388 +60,412 @@ private const val TEMP_FOLDER = "temp"
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-	private lateinit var defaultFolder: File
-	lateinit var packageToPatch: String
-	lateinit var applicationNameToPatch: String
+    private lateinit var defaultFolder: File
+    private lateinit var applicationBeingPatch: ApplicationSupported
 
-	private val viewModel: MainActivityViewModel by viewModels()
+    private val viewModel: MainActivityViewModel by viewModels()
 
-	private val requestWritePermissionLauncher = registerForActivityResult(
-		ActivityResultContracts.RequestPermission()
-	) { isGranted: Boolean ->
-		if (!isGranted) {
-			runOnUiThread {
-				showAlertDialog(
-					getString(R.string.storage_permission_denied_warning),
-					positiveButtonText = getString(R.string.ok),
-					positiveButtonAction = {
-						// empty
-					},
-				)
-			}
-		}
-	}
+    private val requestWritePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            runOnUiThread {
+                showAlertDialog(
+                    getString(R.string.storage_permission_denied_warning),
+                    positiveButtonText = getString(R.string.ok),
+                    positiveButtonAction = {
+                        // empty
+                    },
+                )
+            }
+        }
+    }
 
-	private val uninstallCallback =
-		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-			patchedApk?.let {
-				installAppOrShowPopUpIfAlreadyInstalled(it)
-			}
-		}
-
-
-	private var logField: TextView? = null
-
-	override fun onCreate(savedInstanceState: Bundle?) {
-		super.onCreate(savedInstanceState)
-		enableEdgeToEdge()
-
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(
-				this,
-				Manifest.permission.WRITE_EXTERNAL_STORAGE
-			) != PackageManager.PERMISSION_GRANTED
-		) {
-			requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-		}
-		setContent {
-			val uiState = viewModel.uiState.collectAsState().value
-
-			uiState.alertDialogData?.let { alertDialogData ->
-				OptionsAlertDialog(
-					dialogTitle = alertDialogData.title,
-					dialogText = alertDialogData.text,
-					extraContent = null,
-					onDismissRequest = {
-						viewModel.onAlertDialogDismissed()
-					},
-					firstOptionText = alertDialogData.positiveButtonText,
-					firstOptionAction = alertDialogData.positiveButtonAction,
-					secondOptionText = alertDialogData.neutralButtonText,
-					secondOptionAction = alertDialogData.neutralButtonAction,
-				)
-			}
-
-			AutoPatcherTheme {
-				uiState.applicationChosen?.let { applicationChosen ->
-					packageToPatch = applicationChosen.packageName
-					applicationNameToPatch = applicationChosen.nameToDisplay
-					AutoPatcherScreen(
-						title = getString(R.string.app_name),
-						onPatchingFinished = { patch ->
-							patch?.let {
-								patchedApk = patch
-								installAppOrShowPopUpIfAlreadyInstalled(patch)
-							}
-							showAlertDialog(
-								getString(R.string.ready_to_install, applicationNameToPatch, applicationNameToPatch),
-								positiveButtonText = getString(R.string.next),
-								positiveButtonAction = {
-									AppInstaller.uninstallApp(uninstallCallback, packageToPatch)
-								},
-							)
-						},
-						onCopyClick = { text ->
-							copyText(
-								text
-							)
-						},
-						onInstallClick = { patch ->
-							patch?.let {
-								patchedApk = patch
-								installAppOrShowPopUpIfAlreadyInstalled(patch)
-							}
-						},
-						onCancelClick = {
-							restartActivity()
-						},
-						onDownloadClick = { patch ->
-							patch?.let {
-								patchedApk = patch
-								saveApk(patch)
-							}
-						},
-						onError = { error ->
-							showError(error)
-						},
-						defaultFolder = defaultFolder,
-						applicationChosen = applicationChosen
-					)
-				} ?: run {
-					ApplicationChoice(
-						onSpotifyClick = {
-							viewModel.onApplicationChosen(SPOTIFY)
-						},
-						onYoutubeMusicClick = {
-							viewModel.onApplicationChosen(YOUTUBE_MUSIC)
-						}
-					)
-				}
-			}
-		}
-
-		defaultFolder = File(cacheDir, TEMP_FOLDER)
-		if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
-		defaultFolder.clearDirectory()
-		WindowCompat.setDecorFitsSystemWindows(window, false)
-
-		LogUtil.logEnabled = true
-
-		lifecycleScope.launch(Dispatchers.IO) {
-			AppUpdater.checkIfAnUpdateIsAvailable(
-				this@MainActivity,
-				defaultFolder,
-				onUpdateAvailable = { latestVersionApk ->
-					showAlertDialog(
-						getString(R.string.a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it),
-						positiveButtonText = getString(R.string.install),
-						positiveButtonAction = {
-							AppInstaller.installApp(this@MainActivity, latestVersionApk)
-
-						},
-						neutralButtonText = getString(R.string.skip),
-						neutralButtonAction = {
-						}
-					)
-				},
-				onUpdateNotAvailable = {
-					LogUtil.logMessage(getString(R.string.no_update_available))
-				}).onFailure { exception ->
-				LogUtil.logMessage(
-					getString(
-						R.string.could_not_check_for_spotifyautopatcher_updates,
-						exception
-					)
-				)
-			}
-		}
-	}
+    private val uninstallCallback =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+            patchedApk?.let {
+                installAppOrShowPopUpIfAlreadyInstalled(it)
+            }
+        }
 
 
-	private fun showAlertDialog(
-		text: String,
-		positiveButtonText: String,
-		positiveButtonAction: () -> Unit,
-		neutralButtonText: String? = null,
-		neutralButtonAction: (() -> Unit)? = null,
-	) {
-		viewModel.displayAlertDialog(
-			AlertDialogData(
-				title = null,
-				text = text,
-				positiveButtonText = positiveButtonText,
-				positiveButtonAction = {
-					positiveButtonAction()
-					viewModel.onAlertDialogDismissed()
-				},
-				neutralButtonText = neutralButtonText,
-				neutralButtonAction = {
-					neutralButtonAction?.invoke()
-					viewModel.onAlertDialogDismissed()
-				}
-			)
-		)
-	}
+    private var logField: TextView? = null
 
-	private fun styleAlertDialog(ad: AlertDialog) {
-		val w = ad.window
-		if (w != null) {
-			val border = GradientDrawable()
-			val typedValue = TypedValue()
-			theme.resolveAttribute(android.R.attr.colorBackgroundFloating, typedValue, true)
-			border.setColor(typedValue.data) // Background color
-			border.setStroke(5, typedValue.data) // Border width and color
-			border.cornerRadius = 24f
-			w.setBackgroundDrawable(border)
-			val m = 0.8
-			val displayMetrics = this.resources.displayMetrics
-			val height = (displayMetrics.heightPixels * m).toInt()
-			val width = (displayMetrics.widthPixels * m).toInt()
-			w.setLayout(width, height)
-		}
-		runOnUiThread { ad.show() }
-	}
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-	override fun onResume() {
-		super.onResume()
-		val window = this.window
-		window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-	}
-
-	override fun onPause() {
-		super.onPause()
-		val window = this.window
-		window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-	}
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+        setContent {
+            val uiState = viewModel.uiState.collectAsState().value
 
 
-	private fun saveApk(apk: File) {
-		apk.saveToDownloadsFolder(
-			contentResolver,
-			"Spotify(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
-		)
-			.onFailure {
-				showAlertDialog(
-					getString(R.string.could_not_save_apk),
-					positiveButtonText = getString(R.string.ok),
-					positiveButtonAction = {
-						// empty
-					},
-				)
-			}
-			.onSuccess {
-				val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
-					Environment.DIRECTORY_DOWNLOADS
-				)
-				showAlertDialog(
-					getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
-					positiveButtonText = getString(R.string.ok),
-					positiveButtonAction = {
-						// empty
-					},
-				)
-			}
-	}
+            AutoPatcherTheme {
+                Surface {
+                    VerticalGradientBox()
 
-	private fun restartActivity() {
-		var intent = packageManager.getLaunchIntentForPackage(packageName)
-		if (intent == null) {
-			intent = getIntent()
-			finish()
-			startActivity(intent)
-		} else {
-			startActivity(Intent.makeRestartActivityTask(intent.component))
-			Runtime.getRuntime().exit(0)
-		}
-	}
+                    uiState.alertDialogData?.let { alertDialogData ->
+                        OptionsAlertDialog(
+                            dialogTitle = alertDialogData.title,
+                            dialogText = alertDialogData.text,
+                            extraContent = null,
+                            onDismissRequest = {
+                                viewModel.onAlertDialogDismissed()
+                            },
+                            firstOptionText = alertDialogData.positiveButtonText,
+                            firstOptionAction = alertDialogData.positiveButtonAction,
+                            secondOptionText = alertDialogData.neutralButtonText,
+                            secondOptionAction = alertDialogData.neutralButtonAction,
+                        )
+                    }
 
-	private fun installAppOrShowPopUpIfAlreadyInstalled(patchedApk: File) {
-		try {
-			this@MainActivity.packageManager.getPackageInfo(
-				packageToPatch, 0
-			).applicationInfo!!.sourceDir
-			showAlertDialog(
-				getString(R.string.spotify_detected_before_install, applicationNameToPatch),
-				positiveButtonText = getString(R.string.ok),
-				positiveButtonAction = {
-					// empty
-				},
-				neutralButtonText = getString(R.string.install_anyway_not_recommended),
-				neutralButtonAction = {
-					AppInstaller.installApp(this, patchedApk)
-				}
-			)
-		} catch (_: NameNotFoundException) {
-			AppInstaller.installApp(this, patchedApk)
-		}
-	}
+                    uiState.applicationChosen?.let { applicationChosen ->
+                        applicationBeingPatch = applicationChosen
+                        AutoPatcherScreen(
+                            title = getString(
+                                R.string.patching_app,
+                                applicationChosen.nameToDisplay
+                            ),
+                            onPatchingFinished = { patch ->
+                                patch?.let {
+                                    patchedApk = patch
+                                    installAppOrShowPopUpIfAlreadyInstalled(patch)
+                                }
+                                showAlertDialog(
+                                    getString(
+                                        R.string.ready_to_install,
+                                        applicationBeingPatch.nameToDisplay,
+                                        applicationBeingPatch.nameToDisplay
+                                    ),
+                                    positiveButtonText = getString(R.string.next),
+                                    positiveButtonAction = {
+                                        AppInstaller.uninstallApp(
+                                            uninstallCallback,
+                                            applicationBeingPatch.packageName
+                                        )
+                                    },
+                                )
+                            },
+                            onCopyClick = { text ->
+                                copyText(
+                                    text
+                                )
+                            },
+                            onInstallClick = { patch ->
+                                patch?.let {
+                                    patchedApk = patch
+                                    installAppOrShowPopUpIfAlreadyInstalled(patch)
+                                }
+                            },
+                            onCancelClick = {
+                                restartActivity()
+                            },
+                            onDownloadClick = { patch ->
+                                patch?.let {
+                                    patchedApk = patch
+                                    saveApk(patch)
+                                }
+                            },
+                            onError = { error ->
+                                showError(error)
+                            },
+                            defaultFolder = defaultFolder,
+                            applicationChosen = applicationChosen
+                        )
+                    } ?: run {
+                        ApplicationChoice(
+                            onSpotifyClick = {
+                                viewModel.onApplicationChosen(SPOTIFY)
+                            },
+                            onYoutubeMusicClick = {
+                                viewModel.onApplicationChosen(YOUTUBE_MUSIC)
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
-	private var patchedApk: File? = null
+        defaultFolder = File(cacheDir, TEMP_FOLDER)
+        if (!defaultFolder.exists()) defaultFolder.toPath().createDirectory()
+        defaultFolder.clearDirectory()
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
-	private fun copyText(text: CharSequence) {
-		(getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(
-			ClipData.newPlainText(
-				"log",
-				text
-			)
-		)
-		Toast.makeText(
-			this,
-			this.getString(R.string.copied_log), Toast.LENGTH_SHORT
-		).show()
-	}
+        LogUtil.logEnabled = true
 
-	private fun showError(error: Throwable) {
-		when {
-			error.isNetworkException() -> {
-				showAlertDialog(
-					getString(R.string.network_unavailable_error),
-					positiveButtonText = getString(R.string.retry),
-					positiveButtonAction = {
-						restartActivity()
-					},
-				)
-			}
+        lifecycleScope.launch(Dispatchers.IO) {
+            AppUpdater.checkIfAnUpdateIsAvailable(
+                this@MainActivity,
+                defaultFolder,
+                onUpdateAvailable = { latestVersionApk ->
+                    showAlertDialog(
+                        getString(R.string.a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it),
+                        positiveButtonText = getString(R.string.install),
+                        positiveButtonAction = {
+                            AppInstaller.installApp(this@MainActivity, latestVersionApk)
 
-			error is NameNotFoundException -> {
-				showAlertDialog(
-					getString(R.string.app_not_found_error, applicationNameToPatch, applicationNameToPatch),
-					positiveButtonText = getString(R.string.retry),
-					positiveButtonAction = {
-						restartActivity()
-					},
-				)
-			}
+                        },
+                        neutralButtonText = getString(R.string.skip),
+                        neutralButtonAction = {
+                        }
+                    )
+                },
+                onUpdateNotAvailable = {
+                    LogUtil.logMessage(getString(R.string.no_update_available))
+                }).onFailure { exception ->
+                LogUtil.logMessage(
+                    getString(
+                        R.string.could_not_check_for_spotifyautopatcher_updates,
+                        exception
+                    )
+                )
+            }
+        }
+    }
 
-			error is ZipException -> {
-				showAlertDialog(
-					getString(R.string.zip_exception_error),
-					positiveButtonText = getString(R.string.fix),
-					positiveButtonAction = {
-						(getSystemService(ACTIVITY_SERVICE) as ActivityManager).clearApplicationUserData()
-					},
-					neutralButtonText = getString(R.string.retry),
-					neutralButtonAction = {
-						restartActivity()
-					}
-				)
-			}
 
-			error !is ClosedByInterruptException -> {
-				val mainErr = error.toString()
+    private fun showAlertDialog(
+        text: String,
+        positiveButtonText: String,
+        positiveButtonAction: () -> Unit,
+        neutralButtonText: String? = null,
+        neutralButtonAction: (() -> Unit)? = null,
+    ) {
+        viewModel.displayAlertDialog(
+            AlertDialogData(
+                title = null,
+                text = text,
+                positiveButtonText = positiveButtonText,
+                positiveButtonAction = {
+                    positiveButtonAction()
+                    viewModel.onAlertDialogDismissed()
+                },
+                neutralButtonText = neutralButtonText,
+                neutralButtonAction = {
+                    neutralButtonAction?.invoke()
+                    viewModel.onAlertDialogDismissed()
+                }
+            )
+        )
+    }
 
-				val stackTrace = StringBuilder(mainErr)
+    private fun styleAlertDialog(ad: AlertDialog) {
+        val w = ad.window
+        if (w != null) {
+            val border = GradientDrawable()
+            val typedValue = TypedValue()
+            theme.resolveAttribute(android.R.attr.colorBackgroundFloating, typedValue, true)
+            border.setColor(typedValue.data) // Background color
+            border.setStroke(5, typedValue.data) // Border width and color
+            border.cornerRadius = 24f
+            w.setBackgroundDrawable(border)
+            val m = 0.8
+            val displayMetrics = this.resources.displayMetrics
+            val height = (displayMetrics.heightPixels * m).toInt()
+            val width = (displayMetrics.widthPixels * m).toInt()
+            w.setLayout(width, height)
+        }
+        runOnUiThread { ad.show() }
+    }
 
-				for (line in error.stackTrace) stackTrace.append(line).append('\n')
-				val fullLog = StringBuilder(stackTrace).append('\n')
-					.append("SDK ").append(Build.VERSION.SDK_INT).append('\n')
-					.append(this.getString(R.string.app_name)).append(' ')
-				val currentVer = packageManager.getPackageInfo(packageName, 0).versionName
-				fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
-					.append('\n').append(logField?.text)
+    override fun onResume() {
+        super.onResume()
+        val window = this.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
 
-				runOnUiThread {
-					val dialogView = layoutInflater.inflate(
-						R.layout.dialog_button_layout,
-						null
-					)
-					(dialogView.findViewById<View>(R.id.errorD) as TextView).text =
-						stackTrace
+    override fun onPause() {
+        super.onPause()
+        val window = this.window
+        window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
 
-					styleAlertDialog(
-						MaterialAlertDialogBuilder(this)
-							.setTitle(mainErr)
-							.setCancelable(false)
-							.setView(dialogView)
-							.setPositiveButton(
-								this.getString(R.string.copy_log)
-							) { dialog: DialogInterface, _: Int ->
-								copyText(fullLog)
-								dialog.dismiss()
-							}
-							.setNegativeButton(
-								this.getString(R.string.create_issue)
-							) { dialog: DialogInterface, _: Int ->
-								startActivity(
-									Intent(
-										Intent.ACTION_VIEW,
-										"https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
-									)
-								)
-								dialog.dismiss()
-							}
-							.setNeutralButton(
-								this.getString(R.string.cancel)
-							) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
-							.create())
-					val scrollView =
-						dialogView.findViewById<ScrollView>(R.id.errorView)
 
-					val params = scrollView.layoutParams
-					params.height =
-						(this.resources.displayMetrics.heightPixels * 0.5).toInt()
-					scrollView.layoutParams = params
-				}
-			}
-		}
-	}
+    private fun saveApk(apk: File) {
+        apk.saveToDownloadsFolder(
+            contentResolver,
+            "Spotify(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
+        )
+            .onFailure {
+                showAlertDialog(
+                    getString(R.string.could_not_save_apk),
+                    positiveButtonText = getString(R.string.ok),
+                    positiveButtonAction = {
+                        // empty
+                    },
+                )
+            }
+            .onSuccess {
+                val downloadsDirectory = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS
+                )
+                showAlertDialog(
+                    getString(R.string.apk_saved) + " : ${downloadsDirectory.path}",
+                    positiveButtonText = getString(R.string.ok),
+                    positiveButtonAction = {
+                        // empty
+                    },
+                )
+            }
+    }
+
+    private fun restartActivity() {
+        var intent = packageManager.getLaunchIntentForPackage(packageName)
+        if (intent == null) {
+            intent = getIntent()
+            finish()
+            startActivity(intent)
+        } else {
+            startActivity(Intent.makeRestartActivityTask(intent.component))
+            Runtime.getRuntime().exit(0)
+        }
+    }
+
+    private fun installAppOrShowPopUpIfAlreadyInstalled(patchedApk: File) {
+        try {
+            if (applicationBeingPatch.requireUninstall) {
+                this@MainActivity.packageManager.getPackageInfo(
+                    applicationBeingPatch.packageName, 0
+                ).applicationInfo!!.sourceDir
+                showAlertDialog(
+                    getString(
+                        R.string.spotify_detected_before_install,
+                        applicationBeingPatch.nameToDisplay
+                    ),
+                    positiveButtonText = getString(R.string.ok),
+                    positiveButtonAction = {
+                        // empty
+                    },
+                    neutralButtonText = getString(R.string.install_anyway_not_recommended),
+                    neutralButtonAction = {
+                        AppInstaller.installApp(this, patchedApk)
+                    }
+                )
+            } else {
+                AppInstaller.installApp(this, patchedApk)
+            }
+        } catch (_: NameNotFoundException) {
+            AppInstaller.installApp(this, patchedApk)
+        }
+    }
+
+    private var patchedApk: File? = null
+
+    private fun copyText(text: CharSequence) {
+        (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(
+            ClipData.newPlainText(
+                "log",
+                text
+            )
+        )
+        Toast.makeText(
+            this,
+            this.getString(R.string.copied_log), Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun showError(error: Throwable) {
+        when {
+            error.isNetworkException() -> {
+                showAlertDialog(
+                    getString(R.string.network_unavailable_error),
+                    positiveButtonText = getString(R.string.retry),
+                    positiveButtonAction = {
+                        restartActivity()
+                    },
+                )
+            }
+
+            error is NameNotFoundException -> {
+                showAlertDialog(
+                    getString(
+                        R.string.app_not_found_error,
+                        applicationBeingPatch.nameToDisplay,
+                        applicationBeingPatch.nameToDisplay
+                    ),
+                    positiveButtonText = getString(R.string.retry),
+                    positiveButtonAction = {
+                        restartActivity()
+                    },
+                )
+            }
+
+            error is ZipException -> {
+                showAlertDialog(
+                    getString(R.string.zip_exception_error),
+                    positiveButtonText = getString(R.string.fix),
+                    positiveButtonAction = {
+                        (getSystemService(ACTIVITY_SERVICE) as ActivityManager).clearApplicationUserData()
+                    },
+                    neutralButtonText = getString(R.string.retry),
+                    neutralButtonAction = {
+                        restartActivity()
+                    }
+                )
+            }
+
+            error !is ClosedByInterruptException -> {
+                val mainErr = error.toString()
+
+                val stackTrace = StringBuilder(mainErr)
+
+                for (line in error.stackTrace) stackTrace.append(line).append('\n')
+                val fullLog = StringBuilder(stackTrace).append('\n')
+                    .append("SDK ").append(Build.VERSION.SDK_INT).append('\n')
+                    .append(this.getString(R.string.app_name)).append(' ')
+                val currentVer = packageManager.getPackageInfo(packageName, 0).versionName
+                fullLog.append(currentVer).append('\n').append("Storage permission granted: ")
+                    .append('\n').append(logField?.text)
+
+                runOnUiThread {
+                    val dialogView = layoutInflater.inflate(
+                        R.layout.dialog_button_layout,
+                        null
+                    )
+                    (dialogView.findViewById<View>(R.id.errorD) as TextView).text =
+                        stackTrace
+
+                    styleAlertDialog(
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle(mainErr)
+                            .setCancelable(false)
+                            .setView(dialogView)
+                            .setPositiveButton(
+                                this.getString(R.string.copy_log)
+                            ) { dialog: DialogInterface, _: Int ->
+                                copyText(fullLog)
+                                dialog.dismiss()
+                            }
+                            .setNegativeButton(
+                                this.getString(R.string.create_issue)
+                            ) { dialog: DialogInterface, _: Int ->
+                                startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        "https://github.com/corentin-c/SpotifyAutoPatcher/issues/new?title=Crash%20Report&body=$fullLog".toUri()
+                                    )
+                                )
+                                dialog.dismiss()
+                            }
+                            .setNeutralButton(
+                                this.getString(R.string.cancel)
+                            ) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
+                            .create())
+                    val scrollView =
+                        dialogView.findViewById<ScrollView>(R.id.errorView)
+
+                    val params = scrollView.layoutParams
+                    params.height =
+                        (this.resources.displayMetrics.heightPixels * 0.5).toInt()
+                    scrollView.layoutParams = params
+                }
+            }
+        }
+    }
 }

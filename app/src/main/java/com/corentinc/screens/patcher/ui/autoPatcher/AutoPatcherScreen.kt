@@ -17,7 +17,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,196 +34,194 @@ import java.io.File
 
 @Composable
 fun AutoPatcherScreen(
-	title: String,
-	modifier: Modifier = Modifier,
-	onCopyClick: (String) -> Unit = {},
-	onInstallClick: (File?) -> Unit = {},
-	onDownloadClick: (File?) -> Unit = {},
-	onCancelClick: () -> Unit = {},
-	onPatchingFinished: (File?) -> Unit = {},
-	onError: (error: Throwable) -> Unit = {},
-	defaultFolder: File,
-	applicationChosen: ApplicationSupported,
-	viewModel: PatcherViewModel = hiltViewModel()
+    title: String,
+    modifier: Modifier = Modifier,
+    onCopyClick: (String) -> Unit = {},
+    onInstallClick: (File?) -> Unit = {},
+    onDownloadClick: (File?) -> Unit = {},
+    onCancelClick: () -> Unit = {},
+    onPatchingFinished: (File?) -> Unit = {},
+    onError: (error: Throwable) -> Unit = {},
+    defaultFolder: File,
+    applicationChosen: ApplicationSupported,
+    viewModel: PatcherViewModel = hiltViewModel()
 ) {
 
-	val uiState = viewModel.uiState.collectAsState().value
-	if (uiState.isPatchingFinished) {
-		onPatchingFinished(uiState.patchedApk)
-		viewModel.onPatchingFinishedHandled()
-	}
+    val uiState = viewModel.uiState.collectAsState().value
+    if (uiState.isPatchingFinished) {
+        onPatchingFinished(uiState.patchedApk)
+        viewModel.onPatchingFinishedHandled()
+    }
 
-	if (uiState.error != null) {
-		onError(uiState.error!!)
-		viewModel.onErrorHandled()
-	}
+    if (uiState.error != null) {
+        onError(uiState.error!!)
+        viewModel.onErrorHandled()
+    }
 
-	if (uiState.shouldShowStartProcessingDialog) {
-		OptionsAlertDialog(
-			dialogText = stringResource(
-				R.string.before_start_message,
-				applicationChosen.nameToDisplay
-			),
-			firstOptionText = stringResource(R.string.start),
-			firstOptionAction = {
-				viewModel.onStart(defaultFolder, applicationChosen.packageName)
-				viewModel.onAlertDialogHandled()
-			},
-		)
-	}
+    if (uiState.shouldShowStartProcessingDialog) {
+        OptionsAlertDialog(
+            dialogText = stringResource(
+                R.string.before_start_message,
+                applicationChosen.nameToDisplay
+            ),
+            firstOptionText = stringResource(R.string.start),
+            firstOptionAction = {
+                viewModel.onStart(defaultFolder, applicationChosen)
+                viewModel.onAlertDialogHandled()
+            },
+        )
+    }
 
-	AutoPatcherScreenContent(
-		title = title,
-		modifier = modifier,
-		onCopyClick = {
-			onCopyClick(uiState.logText)
-		},
-		logText = uiState.logText,
-		isCopyButtonVisible = uiState.isCopyButtonVisible,
-		isInstallButtonVisible = uiState.isInstallButtonVisible,
-		isSaveButtonVisible = uiState.isSaveButtonVisible,
-		isCancelButtonVisible = uiState.isCancelButtonVisible,
-		onInstallClick = {
-			onInstallClick(uiState.patchedApk)
-		},
-		onDownloadClick = {
-			onDownloadClick(uiState.patchedApk)
-		},
-		onCancelClick = onCancelClick
-	)
+    AutoPatcherScreenContent(
+        title = title,
+        modifier = modifier,
+        onCopyClick = {
+            onCopyClick(uiState.logText)
+        },
+        logText = uiState.logText,
+        isCopyButtonVisible = uiState.isCopyButtonVisible,
+        isInstallButtonVisible = uiState.isInstallButtonVisible,
+        isSaveButtonVisible = uiState.isSaveButtonVisible,
+        isCancelButtonVisible = uiState.isCancelButtonVisible,
+        onInstallClick = {
+            onInstallClick(uiState.patchedApk)
+        },
+        onDownloadClick = {
+            onDownloadClick(uiState.patchedApk)
+        },
+        onCancelClick = onCancelClick
+    )
 }
 
 @Composable
 fun AutoPatcherScreenContent(
-	title: String,
-	modifier: Modifier = Modifier,
-	logText: String = "",
-	isCopyButtonVisible: Boolean = true,
-	isInstallButtonVisible: Boolean = true,
-	isSaveButtonVisible: Boolean = true,
-	isCancelButtonVisible: Boolean = true,
-	onCopyClick: () -> Unit = {},
-	onInstallClick: () -> Unit = {},
-	onDownloadClick: () -> Unit = {},
-	onCancelClick: () -> Unit = {}
+    title: String,
+    modifier: Modifier = Modifier,
+    logText: String = "",
+    isCopyButtonVisible: Boolean = true,
+    isInstallButtonVisible: Boolean = true,
+    isSaveButtonVisible: Boolean = true,
+    isCancelButtonVisible: Boolean = true,
+    onCopyClick: () -> Unit = {},
+    onInstallClick: () -> Unit = {},
+    onDownloadClick: () -> Unit = {},
+    onCancelClick: () -> Unit = {}
 ) {
-	Surface {
-		Box(
-			modifier = modifier
+    Box(
+        modifier = modifier
+			.fillMaxSize()
+			.systemBarsPadding()
+    ) {
+        Column(
+            modifier = Modifier
 				.fillMaxSize()
-				.systemBarsPadding()
-		) {
-			Column(
-				modifier = Modifier
-					.fillMaxSize()
-					.padding(top = 50.dp)
-			) {
-				// Scrollable content
-				Column(
-					modifier = Modifier
-						.weight(1f)
-						.verticalScroll(rememberScrollState())
-						.padding(16.dp)
-				) {
-					Text(
-						text = title,
-						style = MaterialTheme.typography.headlineMedium,
-						modifier = Modifier.fillMaxWidth(),
-						softWrap = true
-					)
+				.padding(top = 50.dp)
+        ) {
+            // Scrollable content
+            Column(
+                modifier = Modifier
+					.weight(1f)
+					.verticalScroll(rememberScrollState())
+					.padding(16.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    softWrap = true
+                )
 
-					Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-					Text(
-						text = logText,
-						style = MaterialTheme.typography.bodyMedium,
-						modifier = Modifier.fillMaxWidth(),
-						softWrap = true
-					)
-				}
-			}
+                Text(
+                    text = logText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    softWrap = true
+                )
+            }
+        }
 
-			// Floating action buttons
-			Column(
-				modifier = Modifier
-					.align(Alignment.BottomEnd)
-					.padding(16.dp),
-				verticalArrangement = Arrangement.spacedBy(5.dp)
-			) {
-				if (isCopyButtonVisible) {
-					FloatingActionButton(
-						onClick = onCopyClick,
-						modifier = Modifier,
-						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-						content = {
-							Icon(
-								painter = painterResource(R.drawable.copy),
-								contentDescription = stringResource(R.string.copy_log)
-							)
-						}
-					)
-				}
+        // Floating action buttons
+        Column(
+            modifier = Modifier
+				.align(Alignment.BottomEnd)
+				.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            if (isCopyButtonVisible) {
+                FloatingActionButton(
+                    onClick = onCopyClick,
+                    modifier = Modifier,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+                    content = {
+                        Icon(
+                            painter = painterResource(R.drawable.copy),
+                            contentDescription = stringResource(R.string.copy_log)
+                        )
+                    }
+                )
+            }
 
-				if (isInstallButtonVisible) {
-					FloatingActionButton(
-						onClick = onInstallClick,
-						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-						content = {
-							Icon(
-								painter = painterResource(R.drawable.open_in_new),
-								contentDescription = stringResource(R.string.install)
-							)
-						}
-					)
-				}
+            if (isInstallButtonVisible) {
+                FloatingActionButton(
+                    onClick = onInstallClick,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+                    content = {
+                        Icon(
+                            painter = painterResource(R.drawable.open_in_new),
+                            contentDescription = stringResource(R.string.install)
+                        )
+                    }
+                )
+            }
 
-				if (isSaveButtonVisible) {
-					FloatingActionButton(
-						onClick = onDownloadClick,
-						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-						content = {
-							Icon(
-								painter = painterResource(android.R.drawable.ic_menu_save),
-								contentDescription = stringResource(R.string.app_name)
-							)
-						}
-					)
-				}
+            if (isSaveButtonVisible) {
+                FloatingActionButton(
+                    onClick = onDownloadClick,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+                    content = {
+                        Icon(
+                            painter = painterResource(android.R.drawable.ic_menu_save),
+                            contentDescription = stringResource(R.string.app_name)
+                        )
+                    }
+                )
+            }
 
-				if (isCancelButtonVisible) {
-					FloatingActionButton(
-						onClick = onCancelClick,
-						elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-						content = {
-							Icon(
-								imageVector = Icons.Default.Close, // or use painterResource
-								contentDescription = stringResource(R.string.cancel)
-							)
-						}
-					)
-				}
-			}
-		}
-	}
+            if (isCancelButtonVisible) {
+                FloatingActionButton(
+                    onClick = onCancelClick,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+                    content = {
+                        Icon(
+                            imageVector = Icons.Default.Close, // or use painterResource
+                            contentDescription = stringResource(R.string.cancel)
+                        )
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
-	AutoPatcherScreenContent(
-		title = "Spotify Auto Patcher",
-		logText = "Log text goes here",
-		onCopyClick = {
-			// empty
-		},
-		onInstallClick = {
-			// empty
-		},
-		onDownloadClick = {
-			// empty
-		},
-		onCancelClick = {
-			// empty
-		}
-	)
+    AutoPatcherScreenContent(
+        title = "Spotify Auto Patcher",
+        logText = "Log text goes here",
+        onCopyClick = {
+            // empty
+        },
+        onInstallClick = {
+            // empty
+        },
+        onDownloadClick = {
+            // empty
+        },
+        onCancelClick = {
+            // empty
+        }
+    )
 }

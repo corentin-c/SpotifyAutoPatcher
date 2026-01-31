@@ -31,11 +31,17 @@ fun OptionsAlertDialog(
 				horizontalArrangement = Arrangement.End
 			) {
 				secondOptionText?.let {
-					TextButton(onClick = secondOptionAction ?: {}) {
+					TextButton(
+						modifier = Modifier.weight(0.5f),
+						onClick = secondOptionAction ?: {}
+					) {
 						Text(secondOptionText)
 					}
 				}
-				TextButton(onClick = firstOptionAction) {
+				TextButton(
+					modifier = Modifier.weight(0.5f),
+					onClick = firstOptionAction
+				) {
 					Text(firstOptionText)
 				}
 			}

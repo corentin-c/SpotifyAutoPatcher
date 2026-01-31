@@ -108,5 +108,6 @@
     <string name="could_not_check_for_spotifyautopatcher_updates">Could not check for SpotifyAutoPatcher updates : %1$s</string>
     <string name="a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it">A new version of SpotifyAutoPatcher is available ! Do you want to install it ?</string>
     <string name="skip">Skip</string>
-    <string name="application_choice_title">Choose which application you want to patch : </string>
+    <string name="application_choice_title">Choose which application you want to patch. This app need to be installed on your phone from the Google Play Store and UNPATCHED :</string>
+    <string name="patching_app">Patching %s !</string>
 </resources>

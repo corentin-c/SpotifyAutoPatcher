@@ -20,18 +20,20 @@ object ReVancedPatcher {
         apk: File,
         tmpDirectory: File,
         logListener: LogListener,
-        packageName: String
+        applicationToPatch: ApplicationSupported
     ): File {
         logListener.onLog("Getting patches...")
         val patchesFile = getPatches(context, tmpDirectory)
         val patches =
             loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = tmpDirectory)
         logListener.onLog("Filtering patches...")
-        var spotifyPatches = patches.filter { patch ->
-            patch.compatiblePackages?.any { it.first == packageName } ?: false
+        var filteredPatches = patches.filter { patch ->
+            patch.compatiblePackages?.any { it.first == applicationToPatch.packageName } ?: false
         }
-        spotifyPatches = spotifyPatches + patches.find { it.name == "Change package name" }!!
-        logListener.onLog("${spotifyPatches.size} patches to apply")
+        if(applicationToPatch.requireChangePackageNamePatch) {
+            filteredPatches = filteredPatches + patches.find { it.name == "Change package name" }!!
+        }
+        logListener.onLog("${filteredPatches.size} patches to apply")
         var numberOfPatchesExecuted = 0
         logListener.onLog("Applying patches...")
         val patcherResult =
@@ -43,14 +45,14 @@ object ReVancedPatcher {
                     frameworkFileDirectory = tmpDirectory.path
                 )
             ).use { patcher ->
-                patcher += spotifyPatches.toSet()
+                patcher += filteredPatches.toSet()
                 patcher().collect { patchResult ->
                     numberOfPatchesExecuted++
                     if (patchResult.exception != null)
-                        logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception} ($numberOfPatchesExecuted/${spotifyPatches.size})")
+                        logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception} ($numberOfPatchesExecuted/${filteredPatches.size})")
                     else
-                        logListener.onLog("\"${patchResult.patch}\" succeeded ($numberOfPatchesExecuted/${spotifyPatches.size})")
-                    if (numberOfPatchesExecuted == spotifyPatches.size) {
+                        logListener.onLog("\"${patchResult.patch}\" succeeded ($numberOfPatchesExecuted/${filteredPatches.size})")
+                    if (numberOfPatchesExecuted == filteredPatches.size) {
                         logListener.onLog("Rebuilding...")
                     }
                 }
