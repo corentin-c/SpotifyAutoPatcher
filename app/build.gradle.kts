@@ -13,16 +13,17 @@ android {
 	buildFeatures {
 		compose = true
 		buildConfig = true
+		viewBinding = false
 	}
 
-	android {
-		packaging {
-			jniLibs {
-				useLegacyPackaging = true
-			}
+	packaging {
+		jniLibs {
+			useLegacyPackaging = true
 		}
+        resources {
+            excludes.add("prebuilt/**")
+        }
 	}
-
 
 	namespace = "com.github.corentinc.SpotifyAutoPatcher"
 	compileSdk = 35
@@ -51,9 +52,6 @@ android {
 		isCoreLibraryDesugaringEnabled = true
 		sourceCompatibility = JavaVersion.VERSION_21
 		targetCompatibility = JavaVersion.VERSION_21
-	}
-	buildFeatures {
-		viewBinding = false
 	}
 
 	dependenciesInfo {
