@@ -85,14 +85,14 @@
     <string name="system_theme">System theme</string>
     <string name="suffix">Suffix</string>
     <string name="pairip_warning">The app you are trying to merge uses Pairip/Google加固 Integrity to protect it from modification. The merged version will crash on opening unless you know how to modify the APK to bypass it.</string>
-    <string name="before_start_message">Make sure the UNPATCHED Spotify app is installed from the Google play store, before clicking on Start</string>
-    <string name="app_not_found_error">Couldn\'t find the Spotify app on your phone, make sure the UNPATCHED Spotify app is installed from the Google play store and not disabled on your phone</string>
-    <string name="ready_to_install">Ready to install your patched version of Spotify ! Clicking on Next will uninstall your current version of Spotify before installing the patched one.</string>
-    <string name="spotify_detected_before_install">The Spotify app was still detected on your phone. Please uninstall it before installing the patched one.</string>
+    <string name="before_start_message">Make sure the UNPATCHED %s app is installed from the Google play store, before clicking on Start</string>
+    <string name="app_not_found_error">Couldn\'t find the %s app on your phone, make sure the UNPATCHED %s app is installed from the Google play store and not disabled on your phone</string>
+    <string name="ready_to_install">Ready to install your patched version of %s ! Clicking on Next will uninstall your current version of %s before installing the patched one.</string>
+    <string name="spotify_detected_before_install">The %s app was still detected on your phone. Please uninstall it before installing the patched one.</string>
     <string name="network_unavailable_error">Network connection unavailable. Please make sure you have a stable internet connection and try again</string>
     <string name="retry">Retry</string>
     <string name="start">Start</string>
-    <string name="ok">Ok</string>
+    <string name="ok">OK</string>
     <string name="install_anyway_not_recommended">Install anyway (not recommended)</string>
     <string name="next">Next</string>
     <string name="zip_exception_error">There seems to be an error with the current file system, you can try to apply the fix that will close the app and clear the app to factory settings, or simply retry.</string>
@@ -104,8 +104,10 @@
     <string name="update_available">Update available fro SpotifyAutoPatcher !</string>
     <string name="download_revanced_patches_version">Downloaded ReVanced patches version %1$s</string>
     <string name="no_update_available">No update available</string>
-    <string name="downloading_latest_version">Downloading latest version...</string>
+    <string name="downloading_latest_version">Downloading latest version…</string>
     <string name="could_not_check_for_spotifyautopatcher_updates">Could not check for SpotifyAutoPatcher updates : %1$s</string>
     <string name="a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it">A new version of SpotifyAutoPatcher is available ! Do you want to install it ?</string>
     <string name="skip">Skip</string>
+    <string name="application_choice_title">Choose which application you want to patch. This app need to be installed on your phone from the Google Play Store and UNPATCHED :</string>
+    <string name="patching_app">Patching %s !</string>
 </resources>
