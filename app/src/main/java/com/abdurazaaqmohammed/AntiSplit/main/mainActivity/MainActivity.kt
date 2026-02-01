@@ -27,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
+import androidx.core.content.IntentSanitizer
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
@@ -39,8 +40,8 @@ import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.isNetworkException
 import com.corentinc.patcher.saveToDownloadsFolder
 import com.corentinc.screens.patcher.ui.AlertDialogData
-import com.corentinc.screens.patcher.ui.VerticalGradientBox
 import com.corentinc.screens.patcher.ui.OptionsAlertDialog
+import com.corentinc.screens.patcher.ui.VerticalGradientBox
 import com.corentinc.screens.patcher.ui.autoPatcher.AutoPatcherScreen
 import com.corentinc.screens.patcher.ui.choice.ApplicationChoice
 import com.github.corentinc.SpotifyAutoPatcher.R
@@ -135,22 +136,28 @@ class MainActivity : AppCompatActivity() {
                             onPatchingFinished = { patch ->
                                 patch?.let {
                                     patchedApk = patch
-                                    installAppOrShowPopUpIfAlreadyInstalled(patch)
                                 }
-                                showAlertDialog(
-                                    getString(
-                                        R.string.ready_to_install,
-                                        applicationBeingPatch.nameToDisplay,
-                                        applicationBeingPatch.nameToDisplay
-                                    ),
-                                    positiveButtonText = getString(R.string.next),
-                                    positiveButtonAction = {
-                                        AppInstaller.uninstallApp(
-                                            uninstallCallback,
-                                            applicationBeingPatch.packageName
-                                        )
-                                    },
-                                )
+                                if (applicationBeingPatch.requireUninstall) {
+                                    showAlertDialog(
+                                        getString(
+                                            R.string.ready_to_install,
+                                            applicationBeingPatch.nameToDisplay,
+                                            applicationBeingPatch.nameToDisplay
+                                        ),
+                                        positiveButtonText = getString(R.string.next),
+                                        positiveButtonAction = {
+                                            AppInstaller.uninstallApp(
+                                                uninstallCallback,
+                                                applicationBeingPatch.packageName
+                                            )
+                                        },
+                                    )
+                                } else {
+                                    patchedApk?.let {
+                                        AppInstaller.installApp(this, it)
+                                    }
+                                }
+
                             },
                             onCopyClick = { text ->
                                 copyText(
@@ -160,7 +167,11 @@ class MainActivity : AppCompatActivity() {
                             onInstallClick = { patch ->
                                 patch?.let {
                                     patchedApk = patch
-                                    installAppOrShowPopUpIfAlreadyInstalled(patch)
+                                    if (applicationBeingPatch.requireUninstall) {
+                                        installAppOrShowPopUpIfAlreadyInstalled(patch)
+                                    } else {
+                                        AppInstaller.installApp(this, patch)
+                                    }
                                 }
                             },
                             onCancelClick = {
@@ -290,7 +301,7 @@ class MainActivity : AppCompatActivity() {
     private fun saveApk(apk: File) {
         apk.saveToDownloadsFolder(
             contentResolver,
-            "Spotify(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
+            "${applicationBeingPatch.nameToDisplay}(SpotifyAutoPatcher)-" + Calendar.getInstance().timeInMillis + ".apk"
         )
             .onFailure {
                 showAlertDialog(
@@ -318,7 +329,9 @@ class MainActivity : AppCompatActivity() {
     private fun restartActivity() {
         var intent = packageManager.getLaunchIntentForPackage(packageName)
         if (intent == null) {
-            intent = getIntent()
+            intent = IntentSanitizer.Builder().build().sanitize(this.intent) {
+                // do nothing
+            }
             finish()
             startActivity(intent)
         } else {
@@ -329,27 +342,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun installAppOrShowPopUpIfAlreadyInstalled(patchedApk: File) {
         try {
-            if (applicationBeingPatch.requireUninstall) {
-                this@MainActivity.packageManager.getPackageInfo(
-                    applicationBeingPatch.packageName, 0
-                ).applicationInfo!!.sourceDir
-                showAlertDialog(
-                    getString(
-                        R.string.spotify_detected_before_install,
-                        applicationBeingPatch.nameToDisplay
-                    ),
-                    positiveButtonText = getString(R.string.ok),
-                    positiveButtonAction = {
-                        // empty
-                    },
-                    neutralButtonText = getString(R.string.install_anyway_not_recommended),
-                    neutralButtonAction = {
-                        AppInstaller.installApp(this, patchedApk)
-                    }
-                )
-            } else {
-                AppInstaller.installApp(this, patchedApk)
-            }
+            this@MainActivity.packageManager.getPackageInfo(
+                applicationBeingPatch.packageName, 0
+            ).applicationInfo!!.sourceDir
+            showAlertDialog(
+                getString(
+                    R.string.spotify_detected_before_install,
+                    applicationBeingPatch.nameToDisplay
+                ),
+                positiveButtonText = getString(R.string.ok),
+                positiveButtonAction = {
+                    // empty
+                },
+                neutralButtonText = getString(R.string.install_anyway_not_recommended),
+                neutralButtonAction = {
+                    AppInstaller.installApp(this, patchedApk)
+                }
+            )
         } catch (_: NameNotFoundException) {
             AppInstaller.installApp(this, patchedApk)
         }
