@@ -22,8 +22,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://maven.pkg.github.com/ReVanced/revanced-patcher")
             credentials {
-                username = localProperties.getProperty("gpr.user") as String?
-                password = localProperties.getProperty("gpr.key") as String?
+                username = localProperties.getProperty("gpr.user")
+                password = localProperties.getProperty("gpr.key")
             }
         }
         google()

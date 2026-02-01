@@ -1,7 +1,6 @@
 plugins {
 	id("com.android.application")
-	id("org.jetbrains.kotlin.android")
-	id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
+	id("org.jetbrains.kotlin.plugin.compose") version "2.3.0"
 	// remove if you don't want firebase
 	id("com.google.gms.google-services")
 	id("com.google.firebase.crashlytics")
@@ -26,7 +25,7 @@ android {
 	}
 
 	namespace = "com.github.corentinc.SpotifyAutoPatcher"
-	compileSdk = 35
+	compileSdk = 36
 
 	defaultConfig {
 		applicationId = "com.github.corentinc.SpotifyAutoPatcher"
@@ -62,31 +61,32 @@ android {
 	}
 }
 dependencies {
-	implementation("androidx.core:core-ktx:1.16.0")
+	implementation("androidx.core:core-ktx:1.17.0")
 	coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
-	implementation("com.google.android.material:material:1.12.0")
+	implementation("com.google.android.material:material:1.13.0")
 	implementation("app.revanced:revanced-patcher:21.1.0-dev.1")
 	implementation("app.revanced:revanced-library-android:3.2.0-dev.1")
 	implementation("com.github.topjohnwu.libsu:nio:6.0.0")
-	implementation("com.google.code.gson:gson:2.13.1")
+	implementation("com.google.code.gson:gson:2.13.2")
 
 	// remove if you don't want firebase
-	implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
+	implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
 	implementation("com.google.firebase:firebase-crashlytics")
 	implementation("com.google.firebase:firebase-analytics")
 
 
 	// Core Compose libraries
-	implementation(platform("androidx.compose:compose-bom:2025.07.00"))
+	implementation(platform("androidx.compose:compose-bom:2026.01.01"))
 	implementation("androidx.activity:activity-compose")
 	implementation("androidx.compose.ui:ui")
 	implementation("androidx.compose.ui:ui-tooling-preview")
 	implementation("androidx.compose.material3:material3")
-	implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+	implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
 	debugImplementation("androidx.compose.ui:ui-tooling")
 	debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
 	// Hilt
-	implementation("com.google.dagger:hilt-android:2.57")
-	ksp("com.google.dagger:hilt-compiler:2.57")
+	implementation("com.google.dagger:hilt-android:2.59")
+	ksp("com.google.dagger:hilt-compiler:2.59")
 }
