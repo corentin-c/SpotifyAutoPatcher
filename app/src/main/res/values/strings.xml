@@ -92,7 +92,7 @@
     <string name="network_unavailable_error">Network connection unavailable. Please make sure you have a stable internet connection and try again</string>
     <string name="retry">Retry</string>
     <string name="start">Start</string>
-    <string name="ok">Ok</string>
+    <string name="ok">OK</string>
     <string name="install_anyway_not_recommended">Install anyway (not recommended)</string>
     <string name="next">Next</string>
     <string name="zip_exception_error">There seems to be an error with the current file system, you can try to apply the fix that will close the app and clear the app to factory settings, or simply retry.</string>
@@ -104,7 +104,7 @@
     <string name="update_available">Update available fro SpotifyAutoPatcher !</string>
     <string name="download_revanced_patches_version">Downloaded ReVanced patches version %1$s</string>
     <string name="no_update_available">No update available</string>
-    <string name="downloading_latest_version">Downloading latest version...</string>
+    <string name="downloading_latest_version">Downloading latest version…</string>
     <string name="could_not_check_for_spotifyautopatcher_updates">Could not check for SpotifyAutoPatcher updates : %1$s</string>
     <string name="a_new_version_of_spotifyautopatcher_is_available_do_you_want_to_install_it">A new version of SpotifyAutoPatcher is available ! Do you want to install it ?</string>
     <string name="skip">Skip</string>

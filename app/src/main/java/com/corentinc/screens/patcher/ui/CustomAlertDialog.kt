@@ -25,7 +25,7 @@ fun CustomAlertDialog(
 	buttons: @Composable () -> Unit
 ) {
 	AlertDialog(
-		shape = RoundedCornerShape(5.dp),
+		shape = RoundedCornerShape(10.dp),
 		title = {
 			dialogTitle?.let {
 				Text(
