@@ -53,7 +53,7 @@ But this app :
 
 ⭐  forked from [AntiSplit-M](https://github.com/AbdurazaaqMohammed/AntiSplit-M) by AbdurazaaqMohammed to extract the APK
 * [ReVanced Patcher](https://github.com/ReVanced/revanced-patcher) to patch the app 
-* [ReVanced Patches](https://github.com/ReVanced/revanced-patches) to get the patches for Spotifysure 
+* [ReVanced Patches](https://github.com/ReVanced/revanced-patches) to get the patches
 * [ReVanced Library](https://github.com/ReVanced/revanced-library) to apply the patches and sign the APK
 
 ## Permissions
