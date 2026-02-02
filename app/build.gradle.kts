@@ -30,7 +30,7 @@ android {
 	defaultConfig {
 		applicationId = "com.github.corentinc.SpotifyAutoPatcher"
 		minSdk = 26
-		targetSdk = 33
+		targetSdk = 36
 		versionCode = 5
 		versionName = "2.0.0"
 		multiDexEnabled = true
