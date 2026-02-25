@@ -18,6 +18,7 @@ object UrlDownloader {
 		urlConnection.connectTimeout = 4000
 		val file = File(tmpDirectory, "downloadedFile.apk")
 		file.fromInputStream(urlConnection.getInputStream())
+		file.setWritable(false)
 		return file
 	}
 
