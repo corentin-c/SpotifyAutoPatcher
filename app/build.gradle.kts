@@ -16,11 +16,31 @@ android {
     }
 
     packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
         resources {
-            excludes.add("prebuilt/**")
+            // Useless files
+            excludes += "/XPP3_*_VERSION"
+            excludes += "/font-awesome-license.txt"
+            excludes += "/smali.properties"
+            excludes += "/baksmali.properties"
+            excludes += "/properties/apktool.properties"
+            excludes += "/org/antlr/**"
+            excludes += "/org/mockito/**"
+            excludes += "/org/bouncycastle/pqc/**.properties"
+            excludes += "/org/bouncycastle/x509/**.properties"
+            excludes += "/META-INF/INDEX.LIST"
+            excludes += "/META-INF/**/*.txt"
+            excludes += "/META-INF/**/*.properties"
+            excludes += "/META-INF/DEPENDENCIES"
+
+            // AAPT
+            excludes += "/prebuilt/**/*"
+        }
+        jniLibs {
+            // 32-bit x86 is dead
+            excludes += "/lib/x86/*.so"
+
+            // Equivalent of AndroidManifest's extractNativeLibs=true to ensure libs are compressed
+            useLegacyPackaging = true
         }
     }
 

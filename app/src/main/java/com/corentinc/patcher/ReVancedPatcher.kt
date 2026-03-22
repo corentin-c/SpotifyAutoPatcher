@@ -23,9 +23,12 @@ object ReVancedPatcher {
         logListener.onLog("Getting patches...")
         val patchesFile = getPatches(context, tmpDirectory)
         val patches =
-            loadPatches(onFailedToLoad = { _, throwable ->
-                logListener.onLog("ERROR : Failed to load patches ! : $throwable")
-            }, patchesFiles = arrayOf(patchesFile))
+            loadPatches(
+                onFailedToLoad = { _, throwable ->
+                    logListener.onLog("ERROR : Failed to load patches ! : $throwable")
+                },
+                patchesFiles = arrayOf(patchesFile)
+            )
         logListener.onLog("Filtering patches...")
         var filteredPatches = patches.filter { patch ->
             patch.compatiblePackages?.any { it.first == applicationToPatch.packageName } ?: false
@@ -36,24 +39,18 @@ object ReVancedPatcher {
         logListener.onLog("${filteredPatches.size} patches to apply")
         var numberOfPatchesExecuted = 0
         logListener.onLog("Applying patches...")
-
-//        val myfile =
-//            File("/data/user/0/com.github.corentinc.SpotifyAutoPatcher/cache/temp", "unpatched.apk")
-//
-//        if (myfile.exists())
-//            logListener.onLog(("File exists"))
-//        else
-//            logListener.onLog(("File DOES NO exists"))
-        val patch = patcher(
+        val revancedTmpFile = File(tmpDirectory, "revanced-patcher")
+        revancedTmpFile.mkdir()
+        val patcher = patcher(
             apkFile = apk,
-            temporaryFilesPath = tmpDirectory,
+            temporaryFilesPath = revancedTmpFile,
             aaptBinaryPath = Aapt.binary(context),
-            frameworkFileDirectory = tmpDirectory.path,
+            frameworkFileDirectory = revancedTmpFile.absolutePath,
             getPatches = { _, _ ->
-                patches
+                filteredPatches.toSet()
             }
         )
-        val patcherResult = patch { patchResult ->
+        val patcherResult = patcher { patchResult ->
             numberOfPatchesExecuted++
             if (patchResult.exception != null)
                 logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception} ($numberOfPatchesExecuted/${filteredPatches.size})")
