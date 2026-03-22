@@ -5,6 +5,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
 val localProperties = java.util.Properties()
 val localPropertiesFile = File(rootDir, "local.properties")
@@ -18,14 +21,15 @@ val gprKey: String? = localProperties.getProperty("gpr.key")
 
 dependencyResolutionManagement {
     repositories {
-        maven { url = uri("https://jitpack.io") }
         maven {
-            url = uri("https://maven.pkg.github.com/ReVanced/revanced-patcher")
+            // A repository must be specified for some reason. "registry" is a dummy.
+            url = uri("https://maven.pkg.github.com/revanced/registry")
             credentials {
                 username = localProperties.getProperty("gpr.user")
                 password = localProperties.getProperty("gpr.key")
             }
         }
+        maven { url = uri("https://jitpack.io") }
         google()
         mavenCentral()
     }

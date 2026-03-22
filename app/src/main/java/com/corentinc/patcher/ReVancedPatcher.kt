@@ -3,10 +3,8 @@ package com.corentinc.patcher
 import android.content.Context
 import app.revanced.library.ApkUtils
 import app.revanced.library.ApkUtils.applyTo
-import app.revanced.patcher.Patcher
-import app.revanced.patcher.PatcherConfig
-import app.revanced.patcher.patch.loadPatchesFromDex
-
+import app.revanced.patcher.patch.loadPatches
+import app.revanced.patcher.patcher
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -15,7 +13,7 @@ import com.reandroid.apkeditor.merge.Merger.LogListener
 import java.io.File
 
 object ReVancedPatcher {
-    suspend fun patch(
+    fun patchApk(
         context: Context,
         apk: File,
         tmpDirectory: File,
@@ -25,41 +23,43 @@ object ReVancedPatcher {
         logListener.onLog("Getting patches...")
         val patchesFile = getPatches(context, tmpDirectory)
         val patches =
-            loadPatchesFromDex(setOf(patchesFile), optimizedDexDirectory = tmpDirectory)
+            loadPatches(
+                onFailedToLoad = { _, throwable ->
+                    logListener.onLog("ERROR : Failed to load patches ! : $throwable")
+                },
+                patchesFiles = arrayOf(patchesFile)
+            )
         logListener.onLog("Filtering patches...")
         var filteredPatches = patches.filter { patch ->
             patch.compatiblePackages?.any { it.first == applicationToPatch.packageName } ?: false
         }
-        if(applicationToPatch.requireChangePackageNamePatch) {
+        if (applicationToPatch.requireChangePackageNamePatch) {
             filteredPatches = filteredPatches + patches.find { it.name == "Change package name" }!!
         }
         logListener.onLog("${filteredPatches.size} patches to apply")
         var numberOfPatchesExecuted = 0
         logListener.onLog("Applying patches...")
-        val patcherResult =
-            Patcher(
-                PatcherConfig(
-                    apkFile = apk,
-                    aaptBinaryPath = Aapt.binary(context).absolutePath,
-                    temporaryFilesPath = File(tmpDirectory, "temporaryFiles"),
-                    frameworkFileDirectory = tmpDirectory.path
-                )
-            ).use { patcher ->
-                patcher += filteredPatches.toSet()
-                patcher().collect { patchResult ->
-                    numberOfPatchesExecuted++
-                    if (patchResult.exception != null)
-                        logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception} ($numberOfPatchesExecuted/${filteredPatches.size})")
-                    else
-                        logListener.onLog("\"${patchResult.patch}\" succeeded ($numberOfPatchesExecuted/${filteredPatches.size})")
-                    if (numberOfPatchesExecuted == filteredPatches.size) {
-                        logListener.onLog("Rebuilding...")
-                    }
-                }
-
-                // Compile and save the patched APK file components.
-                patcher.get()
+        val revancedTmpFile = File(tmpDirectory, "revanced-patcher")
+        revancedTmpFile.mkdir()
+        val patcher = patcher(
+            apkFile = apk,
+            temporaryFilesPath = revancedTmpFile,
+            aaptBinaryPath = Aapt.binary(context),
+            frameworkFileDirectory = revancedTmpFile.absolutePath,
+            getPatches = { _, _ ->
+                filteredPatches.toSet()
             }
+        )
+        val patcherResult = patcher { patchResult ->
+            numberOfPatchesExecuted++
+            if (patchResult.exception != null)
+                logListener.onLog("\"${patchResult.patch}\" failed:\n${patchResult.exception} ($numberOfPatchesExecuted/${filteredPatches.size})")
+            else
+                logListener.onLog("\"${patchResult.patch}\" succeeded ($numberOfPatchesExecuted/${filteredPatches.size})")
+            if (numberOfPatchesExecuted == filteredPatches.size) {
+                logListener.onLog("Rebuilding...")
+            }
+        }
         logListener.onLog("Patching succeeded !")
         logListener.onLog("Creating APK...")
         patcherResult.applyTo(apk)

@@ -6,7 +6,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.corentinc.patcher.ApplicationSupported
-import com.corentinc.patcher.ReVancedPatcher.patch
+import com.corentinc.patcher.ReVancedPatcher.patchApk
 import com.corentinc.patcher.copyUriToFile
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.reandroid.apk.ApkBundle
@@ -98,12 +98,12 @@ class PatcherViewModel @Inject constructor(
 		}
 	}
 
-	private suspend fun startPatching(file: File, defaultFolder: File, applicationToPatch: ApplicationSupported) {
+	private fun startPatching(file: File, defaultFolder: File, applicationToPatch: ApplicationSupported) {
 		onLog(context.getString(R.string.merging_apk_succeeded))
 
 		val success = context.getString(R.string.success_saved)
 		LogUtil.logMessage(success)
-		val patch = patch(
+		val patch = patchApk(
 			context, file, defaultFolder,
 			this,
 			applicationToPatch
