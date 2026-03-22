@@ -32,7 +32,7 @@ Android app to patch Spotify and YouTube Music combining the powers of AntiSplit
 - Make sure to disable auto updates from the Google play store
 - Enjoy !
 
-Whats it does : 
+## Whats it does
 - Extract an APK from the UNPATCHED app installed FROM THE GOOGLE PLAY STORE of the phone
 - Retrieve and download the latest ReVanced Patches
 - Apply all existing patches
