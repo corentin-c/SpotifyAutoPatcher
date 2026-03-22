@@ -1,12 +1,10 @@
 # Spotify Auto Patcher
 
-Android app to patch Spotify and Youtube Music combining the powers of AntiSplit-M and ReVanced Manager !
+Android app to patch Spotify and YouTube Music combining the powers of AntiSplit-M and ReVanced Manager !
 
 <img width="337" height="747" alt="image" src="https://github.com/user-attachments/assets/200c3a91-572f-473e-8aad-7548de31e3b9" />
 
 <img width="338" height="747" alt="image" src="https://github.com/user-attachments/assets/7a41d294-d6af-4141-a5f1-f1fcfade5081" />
-
-
 
 ## Usage
 
@@ -20,14 +18,14 @@ Android app to patch Spotify and Youtube Music combining the powers of AntiSplit
 - Wait for the processing to finish
 - Click ok when asked to uninstall the existing store version of Spotify
 - Click ok to install the patched version
-- Make sure to disable auto updates from the Google play store
+- Make sure to disable auto updates from the Google Play Store
 - Enjoy !
 
 # for Youtube Music :
 - Make sure you have a stable internet connection
-- Install Youtube Music FROM THE GOOGLE PLAY STORE
+- Install YouTube Music FROM THE GOOGLE PLAY STORE
 - Launch Spotify Auto Patcher
-- Choose Youtube Music
+- Choose YouTube Music
 - Click on "Start"
 - Wait for the processing to finish
 - Install the patched version
@@ -48,6 +46,12 @@ But this app :
 - Cannot patch an already patched version of Spotify
 - Cannot patch a version of Spotify installed from an APK
 - Doesn't allow you to choose which patches are applied
+
+## Support
+
+If you want to support this project you can buy me a coffee here et buymeacoffee.com/corentinch
+
+<a href="http://buymeacoffee.com/corentinch" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 37px !important;width: 170px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 ## Used projects
 
