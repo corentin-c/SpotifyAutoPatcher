@@ -98,7 +98,7 @@ class PatcherViewModel @Inject constructor(
 		}
 	}
 
-	private suspend fun startPatching(file: File, defaultFolder: File, applicationToPatch: ApplicationSupported) {
+	private fun startPatching(file: File, defaultFolder: File, applicationToPatch: ApplicationSupported) {
 		onLog(context.getString(R.string.merging_apk_succeeded))
 
 		val success = context.getString(R.string.success_saved)

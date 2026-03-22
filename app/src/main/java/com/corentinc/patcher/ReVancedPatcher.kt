@@ -36,6 +36,14 @@ object ReVancedPatcher {
         logListener.onLog("${filteredPatches.size} patches to apply")
         var numberOfPatchesExecuted = 0
         logListener.onLog("Applying patches...")
+
+//        val myfile =
+//            File("/data/user/0/com.github.corentinc.SpotifyAutoPatcher/cache/temp", "unpatched.apk")
+//
+//        if (myfile.exists())
+//            logListener.onLog(("File exists"))
+//        else
+//            logListener.onLog(("File DOES NO exists"))
         val patch = patcher(
             apkFile = apk,
             temporaryFilesPath = tmpDirectory,
