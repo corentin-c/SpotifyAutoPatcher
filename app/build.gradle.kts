@@ -147,10 +147,6 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")
     implementation("app.revanced:patcher:22.0.2-dev.1")
     implementation("app.revanced:library-android:4.0.0")
-
-    //implementation("app.revanced:revanced-patcher:21.1.0-dev.5")
-    //implementation("app.revanced:revanced-library-android:3.2.0-dev.2")
-    //implementation("app.revanced:multidexlib2:3.0.3.r3")
     implementation("com.github.topjohnwu.libsu:nio:6.0.0")
     implementation("com.google.code.gson:gson:2.13.2")
 
