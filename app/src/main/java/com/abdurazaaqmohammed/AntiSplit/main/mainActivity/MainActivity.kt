@@ -35,6 +35,7 @@ import com.corentinc.patcher.AppInstaller
 import com.corentinc.patcher.AppUpdater
 import com.corentinc.patcher.ApplicationSupported
 import com.corentinc.patcher.ApplicationSupported.SPOTIFY
+import com.corentinc.patcher.ApplicationSupported.YOUTUBE
 import com.corentinc.patcher.ApplicationSupported.YOUTUBE_MUSIC
 import com.corentinc.patcher.clearDirectory
 import com.corentinc.patcher.isNetworkException
@@ -196,6 +197,9 @@ class MainActivity : AppCompatActivity() {
                             },
                             onYoutubeMusicClick = {
                                 viewModel.onApplicationChosen(YOUTUBE_MUSIC)
+                            },
+                            onYoutubeClick = {
+                                viewModel.onApplicationChosen(YOUTUBE)
                             }
                         )
                     }

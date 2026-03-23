@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +23,8 @@ import com.github.corentinc.SpotifyAutoPatcher.R
 @Composable
 fun ApplicationChoice(
     onSpotifyClick: () -> Unit,
-    onYoutubeMusicClick: () -> Unit
+    onYoutubeMusicClick: () -> Unit,
+    onYoutubeClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -41,6 +43,7 @@ fun ApplicationChoice(
         )
         Image(
             modifier = Modifier
+                .height(100.dp)
                 .padding(10.dp)
                 .fillMaxWidth()
                 .clickable {
@@ -48,11 +51,11 @@ fun ApplicationChoice(
                 },
             painter = painterResource(R.drawable.spotify_logo),
             contentDescription = "",
-            contentScale = ContentScale.FillWidth
+            contentScale = ContentScale.Fit
         )
         Image(
             modifier = Modifier
-
+                .height(100.dp)
                 .padding(10.dp)
                 .fillMaxWidth()
                 .clickable {
@@ -60,7 +63,19 @@ fun ApplicationChoice(
                 },
             painter = painterResource(R.drawable.youtube_music_logo),
             contentDescription = "",
-            contentScale = ContentScale.FillWidth
+            contentScale = ContentScale.Fit
+        )
+        Image(
+            modifier = Modifier
+                .height(100.dp)
+                .padding(10.dp)
+                .fillMaxWidth()
+                .clickable {
+                    onYoutubeClick()
+                },
+            painter = painterResource(R.drawable.youtube_logo),
+            contentDescription = "",
+            contentScale = ContentScale.Fit
         )
     }
 }
@@ -73,6 +88,9 @@ fun ApplicationChoicePreview() {
             // empty
         },
         onYoutubeMusicClick = {
+            // empty
+        },
+        onYoutubeClick = {
             // empty
         }
     )

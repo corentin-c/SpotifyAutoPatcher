@@ -17,5 +17,11 @@ enum class ApplicationSupported(
         packageName = "com.google.android.apps.youtube.music",
         requireUninstall = false,
         requireChangePackageNamePatch = true
-    )
+    ),
+    YOUTUBE(
+        nameToDisplay = "Youtube",
+        packageName = "com.google.android.youtube",
+        requireUninstall = false,
+        requireChangePackageNamePatch = true
+    ),
 }
