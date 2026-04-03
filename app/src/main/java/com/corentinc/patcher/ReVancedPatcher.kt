@@ -89,23 +89,18 @@ object ReVancedPatcher {
     }
 
     private fun getPatches(context: Context, tmpDirectory: File): File {
-        val string = UrlDownloader.downloadStringFromUrl("https://gitlab.com/api/v4/projects/revanced%2Frevanced-patches/releases")
-        
-        val releases = Gson().fromJson(string, Array<GitLabRelease>::class.java)
-        if (releases.isNullOrEmpty()) throw IllegalStateException("GitLab API returned zero releases. Their mirror might be down.")
-        
-        val latestRelease = releases[0]
-        
-        val patchAsset = latestRelease.assets.links.find { it.name.endsWith(".jar") } 
-            ?: throw IllegalStateException("Could not find patches .jar in the GitLab release")
-    
+        val string = UrlDownloader.downloadStringFromUrl("https://api.revanced.app/v5/patches")
+        val itemType = object : TypeToken<ReVancedPatchesInfo>() {
+            // empty
+        }.type
+        val patchesInfo = Gson().fromJson<ReVancedPatchesInfo>(string, itemType)
         logMessage(
             context.getString(
                 R.string.download_revanced_patches_version,
-                latestRelease.tag_name
+                patchesInfo.version
             )
         )
-        
-        return UrlDownloader.downloadFileFromUrl(patchAsset.direct_asset_url, tmpDirectory)
+        return UrlDownloader.downloadFileFromUrl(patchesInfo.download_url, tmpDirectory)
     }
+
 }
