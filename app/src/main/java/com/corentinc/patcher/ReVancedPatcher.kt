@@ -7,7 +7,6 @@ import app.revanced.patcher.patch.loadPatches
 import app.revanced.patcher.patcher
 import com.github.corentinc.SpotifyAutoPatcher.R
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.reandroid.apkeditor.merge.LogUtil.logMessage
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import java.io.File
@@ -29,18 +28,23 @@ object ReVancedPatcher {
                 },
                 patchesFiles = arrayOf(patchesFile)
             )
+        
         logListener.onLog("Filtering patches...")
         var filteredPatches = patches.filter { patch ->
             patch.compatiblePackages?.any { it.first == applicationToPatch.packageName } ?: false
         }
+        
         if (applicationToPatch.requireChangePackageNamePatch) {
             filteredPatches = filteredPatches + patches.find { it.name == "Change package name" }!!
         }
+        
         logListener.onLog("${filteredPatches.size} patches to apply")
         var numberOfPatchesExecuted = 0
         logListener.onLog("Applying patches...")
+        
         val revancedTmpFile = File(tmpDirectory, "revanced-patcher")
         revancedTmpFile.mkdir()
+        
         val patcher = patcher(
             apkFile = apk,
             temporaryFilesPath = revancedTmpFile,
@@ -50,6 +54,7 @@ object ReVancedPatcher {
                 filteredPatches.toSet()
             }
         )
+        
         val patcherResult = patcher { patchResult ->
             numberOfPatchesExecuted++
             if (patchResult.exception != null)
@@ -60,10 +65,12 @@ object ReVancedPatcher {
                 logListener.onLog("Rebuilding...")
             }
         }
+        
         logListener.onLog("Patching succeeded !")
         logListener.onLog("Creating APK...")
         patcherResult.applyTo(apk)
         logListener.onLog("APK creation succeeded !")
+        
         val signedPatchedApk = File(tmpDirectory, "signedPatched.apk")
         logListener.onLog("Signing APK...")
         ApkUtils.signApk(
@@ -81,20 +88,24 @@ object ReVancedPatcher {
         return signedPatchedApk
     }
 
-
     private fun getPatches(context: Context, tmpDirectory: File): File {
-        val string = UrlDownloader.downloadStringFromUrl("https://api.revanced.app/v4/patches")
-        val itemType = object : TypeToken<ReVancedPatchesInfo>() {
-            // empty
-        }.type
-        val patchesInfo = Gson().fromJson<ReVancedPatchesInfo>(string, itemType)
+        val string = UrlDownloader.downloadStringFromUrl("https://gitlab.com/api/v4/projects/revanced%2Frevanced-patches/releases")
+        
+        val releases = Gson().fromJson(string, Array<GitLabRelease>::class.java)
+        if (releases.isNullOrEmpty()) throw IllegalStateException("GitLab API returned zero releases. Their mirror might be down.")
+        
+        val latestRelease = releases[0]
+        
+        val patchAsset = latestRelease.assets.links.find { it.name.endsWith(".jar") } 
+            ?: throw IllegalStateException("Could not find patches .jar in the GitLab release")
+    
         logMessage(
             context.getString(
                 R.string.download_revanced_patches_version,
-                patchesInfo.version
+                latestRelease.tag_name
             )
         )
-        return UrlDownloader.downloadFileFromUrl(patchesInfo.download_url, tmpDirectory)
+        
+        return UrlDownloader.downloadFileFromUrl(patchAsset.direct_asset_url, tmpDirectory)
     }
-
 }
