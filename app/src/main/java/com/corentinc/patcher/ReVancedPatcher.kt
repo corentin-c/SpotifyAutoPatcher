@@ -6,8 +6,8 @@ import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.patch.loadPatches
 import app.revanced.patcher.patcher
 import com.github.corentinc.SpotifyAutoPatcher.R
+import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.reandroid.apkeditor.merge.LogUtil.logMessage
 import com.reandroid.apkeditor.merge.Merger.LogListener
 import java.io.File
@@ -29,18 +29,23 @@ object ReVancedPatcher {
                 },
                 patchesFiles = arrayOf(patchesFile)
             )
+        
         logListener.onLog("Filtering patches...")
         var filteredPatches = patches.filter { patch ->
             patch.compatiblePackages?.any { it.first == applicationToPatch.packageName } ?: false
         }
+        
         if (applicationToPatch.requireChangePackageNamePatch) {
             filteredPatches = filteredPatches + patches.find { it.name == "Change package name" }!!
         }
+        
         logListener.onLog("${filteredPatches.size} patches to apply")
         var numberOfPatchesExecuted = 0
         logListener.onLog("Applying patches...")
+        
         val revancedTmpFile = File(tmpDirectory, "revanced-patcher")
         revancedTmpFile.mkdir()
+        
         val patcher = patcher(
             apkFile = apk,
             temporaryFilesPath = revancedTmpFile,
@@ -50,6 +55,7 @@ object ReVancedPatcher {
                 filteredPatches.toSet()
             }
         )
+        
         val patcherResult = patcher { patchResult ->
             numberOfPatchesExecuted++
             if (patchResult.exception != null)
@@ -60,10 +66,12 @@ object ReVancedPatcher {
                 logListener.onLog("Rebuilding...")
             }
         }
+        
         logListener.onLog("Patching succeeded !")
         logListener.onLog("Creating APK...")
         patcherResult.applyTo(apk)
         logListener.onLog("APK creation succeeded !")
+        
         val signedPatchedApk = File(tmpDirectory, "signedPatched.apk")
         logListener.onLog("Signing APK...")
         ApkUtils.signApk(
@@ -81,9 +89,8 @@ object ReVancedPatcher {
         return signedPatchedApk
     }
 
-
     private fun getPatches(context: Context, tmpDirectory: File): File {
-        val string = UrlDownloader.downloadStringFromUrl("https://api.revanced.app/v4/patches")
+        val string = UrlDownloader.downloadStringFromUrl("https://api.revanced.app/v5/patches")
         val itemType = object : TypeToken<ReVancedPatchesInfo>() {
             // empty
         }.type
