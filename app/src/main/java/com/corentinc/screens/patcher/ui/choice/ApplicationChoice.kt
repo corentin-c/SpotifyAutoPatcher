@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +31,8 @@ fun ApplicationChoice(
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()
-            .padding(50.dp),
+            .padding(50.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
         Text(
@@ -41,18 +45,7 @@ fun ApplicationChoice(
         )
         Image(
             modifier = Modifier
-                .padding(10.dp)
-                .fillMaxWidth()
-                .clickable {
-                    onSpotifyClick()
-                },
-            painter = painterResource(R.drawable.spotify_logo),
-            contentDescription = "",
-            contentScale = ContentScale.FillWidth
-        )
-        Image(
-            modifier = Modifier
-
+                .height(150.dp)
                 .padding(10.dp)
                 .fillMaxWidth()
                 .clickable {
@@ -60,8 +53,21 @@ fun ApplicationChoice(
                 },
             painter = painterResource(R.drawable.youtube_music_logo),
             contentDescription = "",
-            contentScale = ContentScale.FillWidth
+            contentScale = ContentScale.Fit
         )
+        Image(
+            modifier = Modifier
+                .height(150.dp)
+                .padding(10.dp)
+                .fillMaxWidth()
+                .clickable {
+                    onSpotifyClick()
+                },
+            painter = painterResource(R.drawable.spotify_logo),
+            contentDescription = "",
+            contentScale = ContentScale.Fit
+        )
+
     }
 }
 
