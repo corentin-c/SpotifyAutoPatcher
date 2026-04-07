@@ -6,6 +6,7 @@ import app.revanced.library.ApkUtils.applyTo
 import app.revanced.patcher.patch.loadPatches
 import app.revanced.patcher.patcher
 import com.github.corentinc.SpotifyAutoPatcher.R
+import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import com.reandroid.apkeditor.merge.LogUtil.logMessage
 import com.reandroid.apkeditor.merge.Merger.LogListener
