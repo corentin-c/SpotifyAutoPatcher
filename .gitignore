@@ -15,3 +15,4 @@
 local.properties
 /images
 /app/google-services.json
+/.idea/appInsightsSettings.xml
