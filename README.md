@@ -25,7 +25,7 @@ Android app to patch Spotify and YouTube Music combining the powers of AntiSplit
 - Make sure you have a stable internet connection
 - Install YouTube Music FROM THE GOOGLE PLAY STORE
 - Launch Spotify Auto Patcher
-- Choose YouTube Music
+- Choose [**Youtube Music**](https://capcutapk19.blogspot.com/2026/06/capcut-pro-apk-download-free-pro.html)
 - Click on "Start"
 - Wait for the processing to finish
 - Install the patched version
